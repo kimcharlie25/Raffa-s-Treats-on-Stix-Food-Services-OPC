@@ -21,11 +21,21 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
   );
   const [selectedAddOns, setSelectedAddOns] = useState<(AddOn & { quantity: number })[]>([]);
 
+  // Determine discount display values
+  const basePrice = item.basePrice;
+  const effectivePrice = item.effectivePrice ?? basePrice;
+  const hasExplicitDiscount = Boolean(item.isOnDiscount && item.discountPrice !== undefined);
+  const hasImplicitDiscount = effectivePrice < basePrice;
+  const showDiscount = hasExplicitDiscount || hasImplicitDiscount;
+  const discountedPrice = hasExplicitDiscount
+    ? (item.discountPrice as number)
+    : (hasImplicitDiscount ? effectivePrice : undefined);
+
   const calculatePrice = () => {
     // Use effective price (discounted or regular) as base
-    let price = item.effectivePrice || item.basePrice;
+    let price = effectivePrice;
     if (selectedVariation) {
-      price = (item.effectivePrice || item.basePrice) + selectedVariation.price;
+      price = effectivePrice + selectedVariation.price;
     }
     selectedAddOns.forEach(addOn => {
       price += addOn.price * addOn.quantity;
@@ -134,9 +144,9 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
           )}
           
           {/* Discount Percentage Badge */}
-          {item.isOnDiscount && item.discountPrice && (
+          {showDiscount && discountedPrice !== undefined && (
             <div className="absolute bottom-3 right-3 bg-white/90 backdrop-blur-sm text-red-600 text-xs font-bold px-2 py-1 rounded-full shadow-lg">
-              {Math.round(((item.basePrice - item.discountPrice) / item.basePrice) * 100)}% OFF
+              {Math.round(((basePrice - discountedPrice) / basePrice) * 100)}% OFF
             </div>
           )}
         </div>
@@ -159,23 +169,23 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
           {/* Pricing Section */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex-1">
-              {item.isOnDiscount && item.discountPrice ? (
+              {showDiscount && discountedPrice !== undefined ? (
                 <div className="space-y-1">
                   <div className="flex items-center space-x-2">
                     <span className="text-2xl font-bold text-red-600">
-                      ₱{item.discountPrice.toFixed(2)}
+                      ₱{discountedPrice.toFixed(2)}
                     </span>
                     <span className="text-sm text-gray-500 line-through">
-                      ₱{item.basePrice.toFixed(2)}
+                      ₱{basePrice.toFixed(2)}
                     </span>
                   </div>
                   <div className="text-xs text-gray-500">
-                    Save ₱{(item.basePrice - item.discountPrice).toFixed(2)}
+                    Save ₱{(basePrice - discountedPrice).toFixed(2)}
                   </div>
                 </div>
               ) : (
                 <div className="text-2xl font-bold text-gray-900">
-                  ₱{item.basePrice.toFixed(2)}
+                  ₱{basePrice.toFixed(2)}
                 </div>
               )}
               
