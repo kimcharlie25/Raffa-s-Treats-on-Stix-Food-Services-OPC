@@ -140,46 +140,17 @@ Please confirm this order to proceed. Thank you for choosing ClickEats! 🥟
     `.trim();
 
     const pageId = '61579693577478';
-    const appDeepLink = `fb-messenger://user-thread/${pageId}`;
-    const webLink = `https://m.me/${pageId}`;
+    // Deep link retained for future use if needed
+    // const appDeepLink = `fb-messenger://user-thread/${pageId}`;
+    const encodedMessage = encodeURIComponent(orderDetails);
+    const webLink = `https://m.me/${pageId}?text=${encodedMessage}`;
 
     // Best effort: copy order details so user can paste in Messenger if text cannot be prefilled
-    const copied = await copyOrderDetails(orderDetails);
+    await copyOrderDetails(orderDetails);
 
     if (isMobile) {
-      // Try the Web Share API first (some Android devices will pass text into Messenger via share sheet)
-      if (navigator.share && typeof navigator.share === 'function') {
-        try {
-          await navigator.share({ text: orderDetails, url: webLink });
-        } catch {
-          // ignore if user cancels or share fails
-        }
-      }
-
-      if (copied) {
-        setUiNotice('Order details copied. If the message is not prefilled in Messenger, paste it into the chat.');
-      } else {
-        setUiNotice('If the message is not prefilled in Messenger, paste your order details from the clipboard.');
-      }
-      // Try to open Messenger app; fallback to web link after short delay
-      const openTimer = setTimeout(() => {
-        window.location.href = webLink;
-      }, 1200);
-      // Navigate to the deep link
-      window.location.href = appDeepLink;
-      // Provide a small hint
-      setTimeout(() => {
-        // Non-blocking UX hint; avoid stacking alerts
-        console.log('Order details copied. If text is not prefilled, paste in Messenger.');
-      }, 0);
-      // Clear timer if the page visibility changes (app opened)
-      const visibilityHandler = () => {
-        if (document.hidden) {
-          clearTimeout(openTimer);
-          document.removeEventListener('visibilitychange', visibilityHandler);
-        }
-      };
-      document.addEventListener('visibilitychange', visibilityHandler);
+      // Always prefer the web messenger with prefilled text on mobile as first choice
+      window.location.href = webLink;
     } else {
       window.open(webLink, '_blank');
     }
