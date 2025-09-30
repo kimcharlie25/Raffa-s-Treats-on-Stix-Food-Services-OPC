@@ -1,0 +1,190 @@
+import { useState, useCallback, useEffect } from 'react';
+import { supabase, type Database } from '../lib/supabase';
+import type { CartItem } from '../types';
+
+export interface CreateOrderPayload {
+  customerName: string;
+  contactNumber: string;
+  serviceType: 'dine-in' | 'pickup' | 'delivery';
+  address?: string;
+  pickupTime?: string;
+  partySize?: number;
+  dineInTime?: string;
+  paymentMethod: string;
+  referenceNumber?: string;
+  notes?: string;
+  total: number;
+  items: CartItem[];
+}
+
+export interface OrderWithItems {
+  id: string;
+  customer_name: string;
+  contact_number: string;
+  service_type: 'dine-in' | 'pickup' | 'delivery';
+  address: string | null;
+  pickup_time: string | null;
+  party_size: number | null;
+  dine_in_time: string | null;
+  payment_method: string;
+  reference_number: string | null;
+  notes: string | null;
+  total: number;
+  status: string;
+  created_at: string;
+  order_items: {
+    id: string;
+    item_id: string;
+    name: string;
+    variation: any | null;
+    add_ons: any | null;
+    unit_price: number;
+    quantity: number;
+    subtotal: number;
+  }[];
+}
+
+type OrderItemsTable = Database['public']['Tables']['order_items'];
+
+export const useOrders = () => {
+  const [creating, setCreating] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [orders, setOrders] = useState<OrderWithItems[]>([]);
+
+  const fetchOrders = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const { data, error: fetchError } = await supabase
+        .from('orders')
+        .select(`
+          *,
+          order_items (*)
+        `)
+        .order('created_at', { ascending: false });
+
+      if (fetchError) throw fetchError;
+
+      setOrders(data as OrderWithItems[] || []);
+    } catch (err) {
+      console.error('Error fetching orders:', err);
+      const message = err instanceof Error ? err.message : 'Failed to fetch orders';
+      setError(message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const updateOrderStatus = useCallback(async (orderId: string, status: string) => {
+    try {
+      setError(null);
+
+      const { error: updateError } = await supabase
+        .from('orders')
+        .update({ status })
+        .eq('id', orderId);
+
+      if (updateError) throw updateError;
+
+      // Refresh orders list
+      await fetchOrders();
+    } catch (err) {
+      console.error('Error updating order status:', err);
+      const message = err instanceof Error ? err.message : 'Failed to update order status';
+      setError(message);
+      throw err;
+    }
+  }, [fetchOrders]);
+
+  const createOrder = useCallback(async (payload: CreateOrderPayload) => {
+    try {
+      setCreating(true);
+      setError(null);
+
+      // 1) Insert order
+      const { data: order, error: orderError } = await supabase
+        .from('orders')
+        .insert({
+          customer_name: payload.customerName,
+          contact_number: payload.contactNumber,
+          service_type: payload.serviceType,
+          address: payload.address ?? null,
+          pickup_time: payload.pickupTime ?? null,
+          party_size: payload.partySize ?? null,
+          dine_in_time: payload.dineInTime ? new Date(payload.dineInTime).toISOString() : null,
+          payment_method: payload.paymentMethod,
+          reference_number: payload.referenceNumber ?? null,
+          notes: payload.notes ?? null,
+          total: payload.total,
+        })
+        .select()
+        .single();
+
+      if (orderError) throw orderError;
+
+      // 2) Insert order items
+      const orderItems: OrderItemsTable['Insert'][] = payload.items.map((ci) => ({
+        order_id: order.id,
+        item_id: ci.id,
+        name: ci.name,
+        variation: ci.selectedVariation
+          ? { id: ci.selectedVariation.id, name: ci.selectedVariation.name, price: ci.selectedVariation.price }
+          : null,
+        add_ons: ci.selectedAddOns && ci.selectedAddOns.length > 0
+          ? ci.selectedAddOns.map((a) => ({ id: a.id, name: a.name, price: a.price, quantity: a.quantity ?? 1 }))
+          : null,
+        unit_price: ci.totalPrice,
+        quantity: ci.quantity,
+        subtotal: ci.totalPrice * ci.quantity,
+      }));
+
+      const { error: itemsError } = await supabase
+        .from('order_items')
+        .insert(orderItems);
+
+      if (itemsError) throw itemsError;
+
+      return order;
+    } catch (err) {
+      console.error('Error creating order:', err);
+      const message = err instanceof Error ? err.message : 'Failed to create order';
+      setError(message);
+      throw err;
+    } finally {
+      setCreating(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchOrders();
+
+    // Realtime subscriptions
+    const channel = supabase
+      .channel('orders-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+        fetchOrders();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'order_items' }, () => {
+        fetchOrders();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchOrders]);
+
+  return { 
+    createOrder, 
+    creating, 
+    error, 
+    orders, 
+    loading, 
+    fetchOrders, 
+    updateOrderStatus 
+  };
+};
+
+

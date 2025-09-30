@@ -198,6 +198,94 @@ export type Database = {
           updated_at?: string;
         };
       };
+      orders: {
+        Row: {
+          id: string;
+          customer_name: string;
+          contact_number: string;
+          service_type: 'dine-in' | 'pickup' | 'delivery';
+          address: string | null;
+          pickup_time: string | null;
+          party_size: number | null;
+          dine_in_time: string | null;
+          payment_method: string;
+          reference_number: string | null;
+          notes: string | null;
+          total: number;
+          status: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          customer_name: string;
+          contact_number: string;
+          service_type: 'dine-in' | 'pickup' | 'delivery';
+          address?: string | null;
+          pickup_time?: string | null;
+          party_size?: number | null;
+          dine_in_time?: string | null;
+          payment_method: string;
+          reference_number?: string | null;
+          notes?: string | null;
+          total: number;
+          status?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          customer_name?: string;
+          contact_number?: string;
+          service_type?: 'dine-in' | 'pickup' | 'delivery';
+          address?: string | null;
+          pickup_time?: string | null;
+          party_size?: number | null;
+          dine_in_time?: string | null;
+          payment_method?: string;
+          reference_number?: string | null;
+          notes?: string | null;
+          total?: number;
+          status?: string;
+          created_at?: string;
+        };
+      };
+      order_items: {
+        Row: {
+          id: string;
+          order_id: string;
+          item_id: string;
+          name: string;
+          variation: any | null;
+          add_ons: any | null;
+          unit_price: number;
+          quantity: number;
+          subtotal: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          order_id: string;
+          item_id: string;
+          name: string;
+          variation?: any | null;
+          add_ons?: any | null;
+          unit_price: number;
+          quantity: number;
+          subtotal: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          order_id?: string;
+          item_id?: string;
+          name?: string;
+          variation?: any | null;
+          add_ons?: any | null;
+          unit_price?: number;
+          quantity?: number;
+          subtotal?: number;
+          created_at?: string;
+        };
+      };
     };
   };
 };

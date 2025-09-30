@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ArrowLeft, Clock } from 'lucide-react';
 import { CartItem, PaymentMethod, ServiceType } from '../types';
 import { usePaymentMethods } from '../hooks/usePaymentMethods';
+import { useOrders } from '../hooks/useOrders';
 
 interface CheckoutProps {
   cartItems: CartItem[];
@@ -11,6 +12,7 @@ interface CheckoutProps {
 
 const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack }) => {
   const { paymentMethods } = usePaymentMethods();
+  const { createOrder, creating, error } = useOrders();
   const [step, setStep] = useState<'details' | 'payment'>('details');
   const [customerName, setCustomerName] = useState('');
   const [contactNumber, setContactNumber] = useState('');
@@ -23,7 +25,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack }) =>
   const [partySize, setPartySize] = useState(1);
   const [dineInTime, setDineInTime] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('gcash');
-  const [referenceNumber, setReferenceNumber] = useState('');
+  const [referenceNumber] = useState('');
   const [notes, setNotes] = useState('');
 
   React.useEffect(() => {
@@ -43,7 +45,28 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack }) =>
     setStep('payment');
   };
 
-  const handlePlaceOrder = () => {
+  const handlePlaceOrder = async () => {
+    // Persist order to database first
+    try {
+      const mergedNotes = landmark ? `${notes ? notes + ' | ' : ''}Landmark: ${landmark}` : notes;
+      await createOrder({
+        customerName,
+        contactNumber,
+        serviceType,
+        address: serviceType === 'delivery' ? address : undefined,
+        pickupTime: serviceType === 'pickup' ? (pickupTime === 'custom' ? customTime : `${pickupTime} minutes`) : undefined,
+        partySize: serviceType === 'dine-in' ? partySize : undefined,
+        dineInTime: serviceType === 'dine-in' ? dineInTime : undefined,
+        paymentMethod,
+        referenceNumber,
+        notes: mergedNotes,
+        total: totalPrice,
+        items: cartItems,
+      });
+    } catch (e) {
+      alert('Failed to place order. Please try again.');
+      return;
+    }
     const timeInfo = serviceType === 'pickup' 
       ? (pickupTime === 'custom' ? customTime : `${pickupTime} minutes`)
       : '';
@@ -496,10 +519,14 @@ Please confirm this order to proceed. Thank you for choosing ClickEats! 🥟
 
           <button
             onClick={handlePlaceOrder}
-            className="w-full py-4 rounded-xl font-medium text-lg transition-all duration-200 transform bg-red-600 text-white hover:bg-red-700 hover:scale-[1.02]"
+            disabled={creating}
+            className={`w-full py-4 rounded-xl font-medium text-lg transition-all duration-200 transform ${creating ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-red-600 text-white hover:bg-red-700 hover:scale-[1.02]'}`}
           >
-            Place Order via Messenger
+            {creating ? 'Placing Order...' : 'Place Order via Messenger'}
           </button>
+          {error && (
+            <p className="text-sm text-red-600 text-center mt-2">{error}</p>
+          )}
           
           <p className="text-xs text-gray-500 text-center mt-3">
             You'll be redirected to Facebook Messenger to confirm your order. Don't forget to attach your payment screenshot!
