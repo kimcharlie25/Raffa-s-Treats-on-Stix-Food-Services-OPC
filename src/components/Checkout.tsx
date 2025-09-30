@@ -147,6 +147,15 @@ Please confirm this order to proceed. Thank you for choosing ClickEats! 🥟
     const copied = await copyOrderDetails(orderDetails);
 
     if (isMobile) {
+      // Try the Web Share API first (some Android devices will pass text into Messenger via share sheet)
+      if (navigator.share && typeof navigator.share === 'function') {
+        try {
+          await navigator.share({ text: orderDetails, url: webLink });
+        } catch {
+          // ignore if user cancels or share fails
+        }
+      }
+
       if (copied) {
         setUiNotice('Order details copied. If the message is not prefilled in Messenger, paste it into the chat.');
       } else {
