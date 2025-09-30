@@ -27,6 +27,17 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack }) =>
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('gcash');
   const [referenceNumber] = useState('');
   const [notes, setNotes] = useState('');
+  const [uiNotice, setUiNotice] = useState<string | null>(null);
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+  const copyOrderDetails = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      return false;
+    }
+  };
 
   React.useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -66,11 +77,11 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack }) =>
     } catch (e) {
       const raw = e instanceof Error ? e.message : '';
       if (/rate limit/i.test(raw)) {
-        alert('Too many orders: Please wait 1 minute before placing another order.');
+        setUiNotice('Too many orders: Please wait 1 minute before placing another order.');
       } else if (/missing identifiers/i.test(raw)) {
-        alert('Unable to verify client. Please wait a minute and try again.');
+        setUiNotice('Too many orders: Please wait 1 minute before placing another order.');
       } else {
-        alert(`Order failed: ${raw || 'Please try again.'}`);
+        setUiNotice('Too many orders: Please wait 1 minute before placing another order.');
       }
       return;
     }
@@ -129,16 +140,18 @@ Please confirm this order to proceed. Thank you for choosing ClickEats! 🥟
     `.trim();
 
     const pageId = '61579693577478';
-    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     const appDeepLink = `fb-messenger://user-thread/${pageId}`;
     const webLink = `https://m.me/${pageId}`;
 
     // Best effort: copy order details so user can paste in Messenger if text cannot be prefilled
-    try {
-      await navigator.clipboard.writeText(orderDetails);
-    } catch {}
+    const copied = await copyOrderDetails(orderDetails);
 
     if (isMobile) {
+      if (copied) {
+        setUiNotice('Order details copied. If the message is not prefilled in Messenger, paste it into the chat.');
+      } else {
+        setUiNotice('If the message is not prefilled in Messenger, paste your order details from the clipboard.');
+      }
       // Try to open Messenger app; fallback to web link after short delay
       const openTimer = setTimeout(() => {
         window.location.href = webLink;
@@ -425,6 +438,12 @@ Please confirm this order to proceed. Thank you for choosing ClickEats! 🥟
         <h1 className="text-3xl font-noto font-semibold text-black ml-8">Payment</h1>
       </div>
 
+      {uiNotice && (
+        <div className="mb-4 rounded-lg border border-yellow-300 bg-yellow-50 text-yellow-800 p-4 text-sm">
+          {uiNotice}
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Payment Method Selection */}
         <div className="bg-white rounded-xl shadow-sm p-6">
@@ -560,12 +579,8 @@ Please confirm this order to proceed. Thank you for choosing ClickEats! 🥟
           >
             {creating ? 'Placing Order...' : 'Place Order via Messenger'}
           </button>
-          {error && (
-            <p className="text-sm text-red-600 text-center mt-2">
-              {/rate limit/i.test(error)
-                ? 'Too many orders from this device or contact. Please wait 1 minute before trying again.'
-                : error}
-            </p>
+          {error && !uiNotice && (
+            <p className="text-sm text-red-600 text-center mt-2">{error}</p>
           )}
           
           <p className="text-xs text-gray-500 text-center mt-3">
