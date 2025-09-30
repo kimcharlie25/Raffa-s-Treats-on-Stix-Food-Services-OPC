@@ -213,6 +213,7 @@ export type Database = {
           notes: string | null;
           total: number;
           status: string;
+          ip_address: string | null;
           created_at: string;
         };
         Insert: {
@@ -229,6 +230,7 @@ export type Database = {
           notes?: string | null;
           total: number;
           status?: string;
+          ip_address?: string | null;
           created_at?: string;
         };
         Update: {
@@ -245,6 +247,7 @@ export type Database = {
           notes?: string | null;
           total?: number;
           status?: string;
+          ip_address?: string | null;
           created_at?: string;
         };
       };

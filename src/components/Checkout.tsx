@@ -64,7 +64,14 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack }) =>
         items: cartItems,
       });
     } catch (e) {
-      alert('Failed to place order. Please try again.');
+      const raw = e instanceof Error ? e.message : '';
+      if (/rate limit/i.test(raw)) {
+        alert('Too many orders: Please wait 1 minute before placing another order.');
+      } else if (/missing identifiers/i.test(raw)) {
+        alert('Unable to verify client. Please wait a minute and try again.');
+      } else {
+        alert(`Order failed: ${raw || 'Please try again.'}`);
+      }
       return;
     }
     const timeInfo = serviceType === 'pickup' 
@@ -121,10 +128,39 @@ ${notes ? `📝 Notes: ${notes}` : ''}
 Please confirm this order to proceed. Thank you for choosing ClickEats! 🥟
     `.trim();
 
-    const encodedMessage = encodeURIComponent(orderDetails);
-    const messengerUrl = `https://m.me/61579693577478?text=${encodedMessage}`;
-    
-    window.open(messengerUrl, '_blank');
+    const pageId = '61579693577478';
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const appDeepLink = `fb-messenger://user-thread/${pageId}`;
+    const webLink = `https://m.me/${pageId}`;
+
+    // Best effort: copy order details so user can paste in Messenger if text cannot be prefilled
+    try {
+      await navigator.clipboard.writeText(orderDetails);
+    } catch {}
+
+    if (isMobile) {
+      // Try to open Messenger app; fallback to web link after short delay
+      const openTimer = setTimeout(() => {
+        window.location.href = webLink;
+      }, 1200);
+      // Navigate to the deep link
+      window.location.href = appDeepLink;
+      // Provide a small hint
+      setTimeout(() => {
+        // Non-blocking UX hint; avoid stacking alerts
+        console.log('Order details copied. If text is not prefilled, paste in Messenger.');
+      }, 0);
+      // Clear timer if the page visibility changes (app opened)
+      const visibilityHandler = () => {
+        if (document.hidden) {
+          clearTimeout(openTimer);
+          document.removeEventListener('visibilitychange', visibilityHandler);
+        }
+      };
+      document.addEventListener('visibilitychange', visibilityHandler);
+    } else {
+      window.open(webLink, '_blank');
+    }
     
   };
 
@@ -525,7 +561,11 @@ Please confirm this order to proceed. Thank you for choosing ClickEats! 🥟
             {creating ? 'Placing Order...' : 'Place Order via Messenger'}
           </button>
           {error && (
-            <p className="text-sm text-red-600 text-center mt-2">{error}</p>
+            <p className="text-sm text-red-600 text-center mt-2">
+              {/rate limit/i.test(error)
+                ? 'Too many orders from this device or contact. Please wait 1 minute before trying again.'
+                : error}
+            </p>
           )}
           
           <p className="text-xs text-gray-500 text-center mt-3">

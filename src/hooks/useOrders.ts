@@ -51,6 +51,7 @@ export const useOrders = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [orders, setOrders] = useState<OrderWithItems[]>([]);
+  const [clientIp, setClientIp] = useState<string | null>(null);
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -118,6 +119,7 @@ export const useOrders = () => {
           reference_number: payload.referenceNumber ?? null,
           notes: payload.notes ?? null,
           total: payload.total,
+          ip_address: clientIp ?? null,
         })
         .select()
         .single();
@@ -175,6 +177,26 @@ export const useOrders = () => {
       supabase.removeChannel(channel);
     };
   }, [fetchOrders]);
+
+  // Fetch client IP once (best-effort)
+  useEffect(() => {
+    let cancelled = false;
+    const fetchIp = async () => {
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 3000);
+        const res = await fetch('https://api.ipify.org?format=json', { signal: controller.signal });
+        clearTimeout(timeout);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!cancelled) setClientIp(typeof data.ip === 'string' ? data.ip : null);
+      } catch {
+        // ignore
+      }
+    };
+    if (!clientIp) fetchIp();
+    return () => { cancelled = true; };
+  }, [clientIp]);
 
   return { 
     createOrder, 
