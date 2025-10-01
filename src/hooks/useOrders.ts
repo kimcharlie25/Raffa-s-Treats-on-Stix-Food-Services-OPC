@@ -104,6 +104,33 @@ export const useOrders = () => {
       setCreating(true);
       setError(null);
 
+      const stockAdjustments = payload.items.reduce<Record<string, number>>((acc, item) => {
+        const menuItemId = item.menuItemId || item.id;
+        if (!menuItemId) return acc;
+        acc[menuItemId] = (acc[menuItemId] || 0) + item.quantity;
+        return acc;
+      }, {});
+
+      const stockedItemIds = Object.keys(stockAdjustments);
+
+      if (stockedItemIds.length > 0) {
+        const { data: inventorySnapshot, error: inventoryCheckError } = await supabase
+          .from('menu_items')
+          .select('id, track_inventory, stock_quantity')
+          .in('id', stockedItemIds);
+
+        if (inventoryCheckError) throw inventoryCheckError;
+
+        const insufficientItem = inventorySnapshot?.find((row) =>
+          row.track_inventory && (row.stock_quantity ?? 0) < stockAdjustments[row.id]
+        );
+
+        if (insufficientItem) {
+          const offending = payload.items.find((item) => (item.menuItemId || item.id) === insufficientItem.id);
+          throw new Error(`Insufficient stock for ${offending?.name ?? 'one of the items'}`);
+        }
+      }
+
       // 1) Insert order
       const { data: order, error: orderError } = await supabase
         .from('orders')
@@ -129,7 +156,7 @@ export const useOrders = () => {
       // 2) Insert order items
       const orderItems: OrderItemsTable['Insert'][] = payload.items.map((ci) => ({
         order_id: order.id,
-        item_id: ci.id,
+        item_id: ci.menuItemId || ci.id,
         name: ci.name,
         variation: ci.selectedVariation
           ? { id: ci.selectedVariation.id, name: ci.selectedVariation.name, price: ci.selectedVariation.price }
@@ -147,6 +174,19 @@ export const useOrders = () => {
         .insert(orderItems);
 
       if (itemsError) throw itemsError;
+
+      // Decrement tracked inventory for purchased items
+      const inventoryPayload = Object.entries(stockAdjustments).map(([id, quantity]) => ({ id, quantity }));
+
+      if (inventoryPayload.length > 0) {
+        const { error: inventoryError } = await supabase.rpc('decrement_menu_item_stock', {
+          items: inventoryPayload,
+        });
+
+        if (inventoryError) {
+          console.error('Failed to decrement inventory:', inventoryError);
+        }
+      }
 
       return order;
     } catch (err) {
@@ -208,5 +248,3 @@ export const useOrders = () => {
     updateOrderStatus 
   };
 };
-
-

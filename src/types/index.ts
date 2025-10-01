@@ -31,6 +31,11 @@ export interface MenuItem {
   // Computed effective price (calculated in the app)
   effectivePrice?: number;
   isOnDiscount?: boolean;
+  // Inventory controls
+  trackInventory?: boolean;
+  stockQuantity?: number | null;
+  lowStockThreshold?: number;
+  autoDisabled?: boolean;
 }
 
 export interface CartItem extends MenuItem {
@@ -38,6 +43,7 @@ export interface CartItem extends MenuItem {
   selectedVariation?: Variation;
   selectedAddOns?: AddOn[];
   totalPrice: number;
+  menuItemId: string;
 }
 
 export interface OrderData {

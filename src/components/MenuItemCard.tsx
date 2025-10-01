@@ -6,6 +6,7 @@ interface MenuItemCardProps {
   item: MenuItem;
   onAddToCart: (item: MenuItem, quantity?: number, variation?: Variation, addOns?: AddOn[]) => void;
   quantity: number;
+  cartItemId?: string;
   onUpdateQuantity: (id: string, quantity: number) => void;
 }
 
@@ -13,6 +14,7 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
   item, 
   onAddToCart, 
   quantity, 
+  cartItemId,
   onUpdateQuantity 
 }) => {
   const [showCustomization, setShowCustomization] = useState(false);
@@ -62,12 +64,13 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
   };
 
   const handleIncrement = () => {
-    onUpdateQuantity(item.id, quantity + 1);
+    if (!cartItemId) return;
+    onUpdateQuantity(cartItemId, quantity + 1);
   };
 
   const handleDecrement = () => {
-    if (quantity > 0) {
-      onUpdateQuantity(item.id, quantity - 1);
+    if (quantity > 0 && cartItemId) {
+      onUpdateQuantity(cartItemId, quantity - 1);
     }
   };
 

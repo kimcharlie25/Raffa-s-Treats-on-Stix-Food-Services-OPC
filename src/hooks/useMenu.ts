@@ -51,6 +51,10 @@ export const useMenu = () => {
           discountActive: item.discount_active || false,
           effectivePrice,
           isOnDiscount: isDiscountActive,
+          trackInventory: item.track_inventory || false,
+          stockQuantity: item.stock_quantity,
+          lowStockThreshold: item.low_stock_threshold ?? 0,
+          autoDisabled: item.track_inventory ? item.available === false : false,
           variations: item.variations?.map(v => ({
             id: v.id,
             name: v.name,
@@ -91,7 +95,10 @@ export const useMenu = () => {
           discount_price: item.discountPrice || null,
           discount_start_date: item.discountStartDate || null,
           discount_end_date: item.discountEndDate || null,
-          discount_active: item.discountActive || false
+          discount_active: item.discountActive || false,
+          track_inventory: item.trackInventory || false,
+          stock_quantity: item.stockQuantity ?? null,
+          low_stock_threshold: item.lowStockThreshold ?? 0
         })
         .select()
         .single();
@@ -153,7 +160,10 @@ export const useMenu = () => {
           discount_price: updates.discountPrice || null,
           discount_start_date: updates.discountStartDate || null,
           discount_end_date: updates.discountEndDate || null,
-          discount_active: updates.discountActive
+          discount_active: updates.discountActive,
+          track_inventory: updates.trackInventory,
+          stock_quantity: updates.stockQuantity,
+          low_stock_threshold: updates.lowStockThreshold
         })
         .eq('id', id);
 

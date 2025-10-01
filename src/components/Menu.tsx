@@ -114,13 +114,18 @@ const Menu: React.FC<MenuProps> = ({ menuItems, addToCart, cartItems, updateQuan
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {categoryItems.map((item) => {
-                const cartItem = cartItems.find(cartItem => cartItem.id === item.id);
+                const cartItem = cartItems.find(cartItem =>
+                  cartItem.menuItemId === item.id &&
+                  !cartItem.selectedVariation &&
+                  (!cartItem.selectedAddOns || cartItem.selectedAddOns.length === 0)
+                );
                 return (
                   <MenuItemCard
                     key={item.id}
                     item={item}
                     onAddToCart={addToCart}
                     quantity={cartItem?.quantity || 0}
+                    cartItemId={cartItem?.id}
                     onUpdateQuantity={updateQuantity}
                   />
                 );

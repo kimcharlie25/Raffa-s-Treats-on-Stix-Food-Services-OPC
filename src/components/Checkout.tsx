@@ -76,6 +76,10 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack }) =>
       });
     } catch (e) {
       const raw = e instanceof Error ? e.message : '';
+      if (/insufficient stock/i.test(raw)) {
+        setUiNotice(raw);
+        return;
+      }
       if (/rate limit/i.test(raw)) {
         setUiNotice('Too many orders: Please wait 1 minute before placing another order.');
       } else if (/missing identifiers/i.test(raw)) {

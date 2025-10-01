@@ -21,7 +21,8 @@ export const useCart = () => {
 
   const addToCart = useCallback((item: MenuItem, quantity: number = 1, variation?: Variation, addOns?: AddOn[]) => {
     const totalPrice = calculateItemPrice(item, variation, addOns);
-    
+    const menuItemId = item.id;
+
     // Group add-ons by name and sum their quantities
     const groupedAddOns = addOns?.reduce((groups, addOn) => {
       const existing = groups.find(g => g.id === addOn.id);
@@ -32,10 +33,10 @@ export const useCart = () => {
       }
       return groups;
     }, [] as (AddOn & { quantity: number })[]);
-    
+
     setCartItems(prev => {
       const existingItem = prev.find(cartItem => 
-        cartItem.id === item.id && 
+        cartItem.menuItemId === menuItemId && 
         cartItem.selectedVariation?.id === variation?.id &&
         JSON.stringify(cartItem.selectedAddOns?.map(a => `${a.id}-${a.quantity || 1}`).sort()) === JSON.stringify(groupedAddOns?.map(a => `${a.id}-${a.quantity}`).sort())
       );
@@ -51,6 +52,7 @@ export const useCart = () => {
         return [...prev, { 
           ...item,
           id: uniqueId,
+          menuItemId,
           quantity,
           selectedVariation: variation,
           selectedAddOns: groupedAddOns || [],

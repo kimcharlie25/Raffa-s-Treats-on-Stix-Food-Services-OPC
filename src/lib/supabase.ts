@@ -57,6 +57,9 @@ export type Database = {
           discount_active: boolean;
           created_at: string;
           updated_at: string;
+          track_inventory: boolean;
+          stock_quantity: number | null;
+          low_stock_threshold: number;
         };
         Insert: {
           id?: string;
@@ -73,6 +76,9 @@ export type Database = {
           discount_active?: boolean;
           created_at?: string;
           updated_at?: string;
+          track_inventory?: boolean;
+          stock_quantity?: number | null;
+          low_stock_threshold?: number;
         };
         Update: {
           id?: string;
@@ -89,6 +95,9 @@ export type Database = {
           discount_active?: boolean;
           created_at?: string;
           updated_at?: string;
+          track_inventory?: boolean;
+          stock_quantity?: number | null;
+          low_stock_threshold?: number;
         };
       };
       variations: {

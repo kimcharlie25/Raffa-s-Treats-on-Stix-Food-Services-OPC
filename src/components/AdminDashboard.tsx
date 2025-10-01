@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Edit, Trash2, Save, X, ArrowLeft, Coffee, TrendingUp, Package, Users, FolderOpen, CreditCard, Settings, ShoppingCart, LogOut } from 'lucide-react';
+import { Plus, Edit, Trash2, Save, X, ArrowLeft, Coffee, TrendingUp, Package, Users, FolderOpen, CreditCard, Settings, ShoppingCart, LogOut, Boxes } from 'lucide-react';
 import { MenuItem, Variation, AddOn } from '../types';
 import { addOnCategories } from '../data/menuData';
 import { useMenu } from '../hooks/useMenu';
@@ -10,12 +10,13 @@ import CategoryManager from './CategoryManager';
 import PaymentMethodManager from './PaymentMethodManager';
 import SiteSettingsManager from './SiteSettingsManager';
 import OrdersManager from './OrdersManager';
+import InventoryManager from './InventoryManager';
 
 const AdminDashboard: React.FC = () => {
   const { user, signOut } = useAuth();
   const { menuItems, loading, addMenuItem, updateMenuItem, deleteMenuItem } = useMenu();
   const { categories } = useCategories();
-  const [currentView, setCurrentView] = useState<'dashboard' | 'items' | 'add' | 'edit' | 'categories' | 'payments' | 'settings' | 'orders'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'items' | 'add' | 'edit' | 'categories' | 'payments' | 'settings' | 'orders' | 'inventory'>('dashboard');
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -28,7 +29,10 @@ const AdminDashboard: React.FC = () => {
     popular: false,
     available: true,
     variations: [],
-    addOns: []
+    addOns: [],
+    trackInventory: false,
+    stockQuantity: null,
+    lowStockThreshold: 0
   });
 
   const handleAddItem = () => {
@@ -42,7 +46,10 @@ const AdminDashboard: React.FC = () => {
       popular: false,
       available: true,
       variations: [],
-      addOns: []
+      addOns: [],
+      trackInventory: false,
+      stockQuantity: null,
+      lowStockThreshold: 0
     });
   };
 
@@ -71,11 +78,24 @@ const AdminDashboard: React.FC = () => {
       return;
     }
 
+    const payload: Partial<MenuItem> = {
+      ...formData,
+      stockQuantity: formData.trackInventory
+        ? Math.max(0, Math.floor(Number(formData.stockQuantity ?? 0)))
+        : null,
+      lowStockThreshold: Math.max(0, Math.floor(Number(formData.lowStockThreshold ?? 0)))
+    };
+
+    if (payload.trackInventory && (payload.stockQuantity === null || Number.isNaN(payload.stockQuantity))) {
+      alert('Please provide a valid stock quantity when inventory tracking is enabled.');
+      return;
+    }
+
     try {
       if (editingItem) {
-        await updateMenuItem(editingItem.id, formData);
+        await updateMenuItem(editingItem.id, payload);
       } else {
-        await addMenuItem(formData as Omit<MenuItem, 'id'>);
+        await addMenuItem(payload as Omit<MenuItem, 'id'>);
       }
       setCurrentView('items');
       setEditingItem(null);
@@ -343,6 +363,60 @@ const AdminDashboard: React.FC = () => {
                   />
                   <span className="text-sm font-medium text-black">Available for Order</span>
                 </label>
+              </div>
+            </div>
+
+            {/* Inventory Section */}
+            <div className="mb-8">
+              <h3 className="text-lg font-playfair font-medium text-black mb-4">Inventory</h3>
+              <div className="space-y-4">
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={formData.trackInventory || false}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      trackInventory: e.target.checked,
+                      stockQuantity: e.target.checked
+                        ? Math.max(0, Math.floor(Number(formData.stockQuantity ?? 0)))
+                        : null
+                    })}
+                    className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                  />
+                  <span className="text-sm font-medium text-black">
+                    Track inventory and auto-disable when stock is low
+                  </span>
+                </label>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-black mb-2">Current Stock</label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={formData.trackInventory ? formData.stockQuantity ?? 0 : ''}
+                      onChange={(e) => setFormData({ ...formData, stockQuantity: Number(e.target.value) })}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-100"
+                      placeholder={formData.trackInventory ? '0' : 'Enable inventory tracking'}
+                      disabled={!formData.trackInventory}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-black mb-2">Low Stock Threshold</label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={formData.trackInventory ? formData.lowStockThreshold ?? 0 : ''}
+                      onChange={(e) => setFormData({ ...formData, lowStockThreshold: Number(e.target.value) })}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-100"
+                      placeholder={formData.trackInventory ? 'Notify/disable at this count' : 'Enable inventory tracking'}
+                      disabled={!formData.trackInventory}
+                    />
+                  </div>
+                </div>
+                <p className="text-sm text-gray-500">
+                  When current stock is less than or equal to the threshold, the item is automatically marked unavailable.
+                </p>
               </div>
             </div>
 
@@ -875,6 +949,17 @@ const AdminDashboard: React.FC = () => {
     return <OrdersManager onBack={() => setCurrentView('dashboard')} />;
   }
 
+  if (currentView === 'inventory') {
+    return (
+      <InventoryManager
+        items={menuItems}
+        onBack={() => setCurrentView('dashboard')}
+        onUpdateItem={updateMenuItem}
+        loading={loading}
+      />
+    );
+  }
+
   // Dashboard View
   return (
     <div className="min-h-screen bg-gray-50">
@@ -977,6 +1062,13 @@ const AdminDashboard: React.FC = () => {
               >
                 <Package className="h-5 w-5 text-gray-400" />
                 <span className="font-medium text-gray-900">Manage Menu Items</span>
+              </button>
+              <button
+                onClick={() => setCurrentView('inventory')}
+                className="w-full flex items-center space-x-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-colors duration-200"
+              >
+                <Boxes className="h-5 w-5 text-gray-400" />
+                <span className="font-medium text-gray-900">Inventory Management</span>
               </button>
               <button
                 onClick={() => setCurrentView('categories')}
