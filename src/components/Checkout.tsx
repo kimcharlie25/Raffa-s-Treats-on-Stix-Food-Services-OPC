@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Clock } from 'lucide-react';
+import { ArrowLeft, Clock, Upload, X, Check, Loader2 } from 'lucide-react';
 import { CartItem, PaymentMethod, ServiceType } from '../types';
 import { usePaymentMethods } from '../hooks/usePaymentMethods';
 import { useOrders } from '../hooks/useOrders';
+import { uploadReceiptToCloudinary, compressImage } from '../lib/cloudinary';
 
 interface CheckoutProps {
   cartItems: CartItem[];
@@ -29,6 +30,12 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack }) =>
   const [notes, setNotes] = useState('');
   const [uiNotice, setUiNotice] = useState<string | null>(null);
   const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  // Receipt upload state
+  const [receiptFile, setReceiptFile] = useState<File | null>(null);
+  const [receiptPreview, setReceiptPreview] = useState<string | null>(null);
+  const [receiptUrl, setReceiptUrl] = useState<string | null>(null);
+  const [uploadingReceipt, setUploadingReceipt] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const copyOrderDetails = async (text: string) => {
     try {
@@ -37,6 +44,30 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack }) =>
     } catch {
       return false;
     }
+  };
+
+  const handleReceiptFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setReceiptFile(file);
+    setUploadError(null);
+    setReceiptUrl(null);
+
+    // Create preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setReceiptPreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+
+  const handleRemoveReceipt = () => {
+    setReceiptFile(null);
+    setReceiptPreview(null);
+    setReceiptUrl(null);
+    setUploadError(null);
   };
 
   React.useEffect(() => {
@@ -57,7 +88,34 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack }) =>
   };
 
   const handlePlaceOrder = async () => {
-    // Persist order to database first
+    let uploadedReceiptUrl = receiptUrl;
+
+    // Upload receipt first if user selected one but hasn't uploaded yet
+    if (receiptFile && !receiptUrl) {
+      try {
+        setUploadingReceipt(true);
+        setUploadError(null);
+        setUiNotice('Uploading receipt...');
+
+        // Compress image before upload
+        const compressedFile = await compressImage(receiptFile, 1200, 0.8);
+        
+        // Upload to Cloudinary
+        uploadedReceiptUrl = await uploadReceiptToCloudinary(compressedFile);
+        setReceiptUrl(uploadedReceiptUrl);
+        setUiNotice('Receipt uploaded! Creating order...');
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Failed to upload receipt';
+        setUploadError(message);
+        setUiNotice(`Upload failed: ${message}. Please try again or continue without receipt.`);
+        setUploadingReceipt(false);
+        return; // Stop order placement if upload fails
+      } finally {
+        setUploadingReceipt(false);
+      }
+    }
+
+    // Persist order to database
     try {
       const mergedNotes = landmark ? `${notes ? notes + ' | ' : ''}Landmark: ${landmark}` : notes;
       await createOrder({
@@ -73,6 +131,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack }) =>
         notes: mergedNotes,
         total: totalPrice,
         items: cartItems,
+        receiptUrl: uploadedReceiptUrl ?? undefined,
       });
     } catch (e) {
       const raw = e instanceof Error ? e.message : '';
@@ -477,11 +536,70 @@ Please confirm this order to proceed. Thank you for choosing ClickEats! 🥟
             </div>
           )}
 
-          {/* Reference Number */}
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <h4 className="font-medium text-black mb-2">📸 Payment Proof Required</h4>
-            <p className="text-sm text-gray-700">
-              After making your payment, please take a screenshot of your payment receipt and attach it when you send your order via Messenger. This helps us verify and process your order quickly.
+          {/* Receipt Upload */}
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <h4 className="font-medium text-black mb-3">📸 Upload Payment Receipt</h4>
+            
+            {!receiptPreview ? (
+              <div>
+                <label
+                  htmlFor="receipt-upload"
+                  className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-blue-300 rounded-lg cursor-pointer bg-white hover:bg-blue-50 transition-colors"
+                >
+                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                    <Upload className="h-8 w-8 text-blue-500 mb-2" />
+                    <p className="text-sm text-gray-600">
+                      <span className="font-semibold">Click to select receipt</span> or drag and drop
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">PNG, JPG, WEBP up to 10MB (Optional)</p>
+                  </div>
+                  <input
+                    id="receipt-upload"
+                    type="file"
+                    className="hidden"
+                    accept="image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif"
+                    onChange={handleReceiptFileChange}
+                  />
+                </label>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="relative rounded-lg overflow-hidden border-2 border-blue-300">
+                  <img
+                    src={receiptPreview}
+                    alt="Receipt preview"
+                    className="w-full h-48 object-cover"
+                  />
+                  <button
+                    onClick={handleRemoveReceipt}
+                    className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+
+                {receiptUrl ? (
+                  <div className="flex items-center space-x-2 text-green-600 bg-green-50 px-3 py-2 rounded-lg">
+                    <Check className="h-5 w-5" />
+                    <span className="text-sm font-medium">Receipt ready! Will be saved with your order.</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center space-x-2 text-blue-600 bg-blue-50 px-3 py-2 rounded-lg">
+                    <Upload className="h-5 w-5" />
+                    <span className="text-sm font-medium">Receipt selected. Will upload when you place order.</span>
+                  </div>
+                )}
+
+                {uploadError && (
+                  <div className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
+                    {uploadError}
+                  </div>
+                )}
+              </div>
+            )}
+            
+            <p className="text-xs text-gray-600 mt-3">
+              {receiptFile ? 'Receipt will be uploaded automatically when you place your order.' : 'You can also attach your receipt in the Messenger conversation.'}
             </p>
           </div>
         </div>
@@ -558,10 +676,19 @@ Please confirm this order to proceed. Thank you for choosing ClickEats! 🥟
 
           <button
             onClick={handlePlaceOrder}
-            disabled={creating}
-            className={`w-full py-4 rounded-xl font-medium text-lg transition-all duration-200 transform ${creating ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-red-600 text-white hover:bg-red-700 hover:scale-[1.02]'}`}
+            disabled={creating || uploadingReceipt}
+            className={`w-full py-4 rounded-xl font-medium text-lg transition-all duration-200 transform ${creating || uploadingReceipt ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-red-600 text-white hover:bg-red-700 hover:scale-[1.02]'}`}
           >
-            {creating ? 'Placing Order...' : 'Place Order via Messenger'}
+            {uploadingReceipt ? (
+              <span className="flex items-center justify-center space-x-2">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                <span>Uploading Receipt...</span>
+              </span>
+            ) : creating ? (
+              'Placing Order...'
+            ) : (
+              'Place Order via Messenger'
+            )}
           </button>
           {error && !uiNotice && (
             <p className="text-sm text-red-600 text-center mt-2">{error}</p>

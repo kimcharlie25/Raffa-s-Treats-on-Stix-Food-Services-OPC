@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { ArrowLeft, CheckCircle, Clock, XCircle, RefreshCw, ChevronDown, Search } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Clock, XCircle, RefreshCw, ChevronDown, Search, Image as ImageIcon, Download, Calendar } from 'lucide-react';
 import { useOrders, OrderWithItems } from '../hooks/useOrders';
 
 interface OrdersManagerProps {
@@ -14,6 +14,9 @@ const OrdersManager: React.FC<OrdersManagerProps> = ({ onBack }) => {
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'confirmed' | 'preparing' | 'ready' | 'completed' | 'cancelled'>('all');
   const [sortKey, setSortKey] = useState<'created_at' | 'total' | 'customer_name' | 'status'>('created_at');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [exporting, setExporting] = useState(false);
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
@@ -82,9 +85,23 @@ const OrdersManager: React.FC<OrdersManagerProps> = ({ onBack }) => {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     const base = statusFilter === 'all' ? orders : orders.filter(o => o.status.toLowerCase() === statusFilter);
+    
+    // Apply date filters
+    let dateFiltered = base;
+    if (dateFrom) {
+      const fromDate = new Date(dateFrom);
+      fromDate.setHours(0, 0, 0, 0);
+      dateFiltered = dateFiltered.filter(o => new Date(o.created_at) >= fromDate);
+    }
+    if (dateTo) {
+      const toDate = new Date(dateTo);
+      toDate.setHours(23, 59, 59, 999);
+      dateFiltered = dateFiltered.filter(o => new Date(o.created_at) <= toDate);
+    }
+    
     const searched = q.length === 0
-      ? base
-      : base.filter(o =>
+      ? dateFiltered
+      : dateFiltered.filter(o =>
           o.customer_name.toLowerCase().includes(q) ||
           o.contact_number.toLowerCase().includes(q) ||
           o.id.toLowerCase().includes(q) ||
@@ -105,7 +122,7 @@ const OrdersManager: React.FC<OrdersManagerProps> = ({ onBack }) => {
       }
     });
     return sorted;
-  }, [orders, query, statusFilter, sortKey, sortDir]);
+  }, [orders, query, statusFilter, sortKey, sortDir, dateFrom, dateTo]);
 
   const toggleSort = (key: typeof sortKey) => {
     if (sortKey === key) {
@@ -114,6 +131,98 @@ const OrdersManager: React.FC<OrdersManagerProps> = ({ onBack }) => {
       setSortKey(key);
       setSortDir(key === 'created_at' ? 'desc' : 'asc');
     }
+  };
+
+  const exportToCSV = () => {
+    setExporting(true);
+    try {
+      // Filter completed orders only
+      const completedOrders = filtered.filter(o => o.status.toLowerCase() === 'completed');
+      
+      if (completedOrders.length === 0) {
+        alert('No completed orders to export.');
+        setExporting(false);
+        return;
+      }
+
+      // CSV Headers
+      const headers = [
+        'Order ID',
+        'Date',
+        'Customer Name',
+        'Contact Number',
+        'Service Type',
+        'Address',
+        'Payment Method',
+        'Items',
+        'Total',
+        'Status',
+        'Notes'
+      ];
+
+      // CSV Rows
+      const rows = completedOrders.map(order => {
+        const itemsList = order.order_items.map(item => {
+          let itemStr = `${item.name} x${item.quantity}`;
+          if (item.variation) {
+            itemStr += ` (${item.variation.name})`;
+          }
+          if (item.add_ons && item.add_ons.length > 0) {
+            const addOnsStr = item.add_ons.map((a: any) => 
+              a.quantity > 1 ? `${a.name} x${a.quantity}` : a.name
+            ).join(', ');
+            itemStr += ` + ${addOnsStr}`;
+          }
+          return itemStr;
+        }).join('; ');
+
+        return [
+          order.id.slice(-8).toUpperCase(),
+          formatDateTime(order.created_at),
+          order.customer_name,
+          order.contact_number,
+          formatServiceType(order.service_type),
+          order.address || 'N/A',
+          order.payment_method,
+          `"${itemsList}"`, // Wrap in quotes to handle commas
+          order.total.toFixed(2),
+          order.status,
+          `"${order.notes || 'N/A'}"` // Wrap in quotes
+        ];
+      });
+
+      // Create CSV content
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.join(','))
+      ].join('\n');
+
+      // Create blob and download
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      
+      const dateStr = new Date().toISOString().split('T')[0];
+      link.setAttribute('href', url);
+      link.setAttribute('download', `completed_orders_${dateStr}.csv`);
+      link.style.visibility = 'hidden';
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      alert(`Successfully exported ${completedOrders.length} completed order(s)!`);
+    } catch (error) {
+      console.error('Export error:', error);
+      alert('Failed to export orders. Please try again.');
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const clearDateFilters = () => {
+    setDateFrom('');
+    setDateTo('');
   };
 
   if (loading) {
@@ -170,47 +279,103 @@ const OrdersManager: React.FC<OrdersManagerProps> = ({ onBack }) => {
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Controls */}
         <div className="bg-white rounded-xl shadow-sm p-4 mb-6 border border-gray-200">
-          <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
-            <div className="flex-1 relative">
-              <Search className="h-4 w-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search orders by name, phone, ID, address"
-                className="w-full pl-9 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-            <div className="flex items-center gap-3">
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as any)}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="all">All Statuses</option>
-                <option value="pending">Pending</option>
-                <option value="confirmed">Confirmed</option>
-                <option value="preparing">Preparing</option>
-                <option value="ready">Ready</option>
-                <option value="completed">Completed</option>
-                <option value="cancelled">Cancelled</option>
-              </select>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => toggleSort('created_at')}
-                  className={`px-3 py-2 rounded-lg border text-sm flex items-center gap-1 ${sortKey==='created_at' ? 'border-blue-500 text-blue-700 bg-blue-50' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+          <div className="flex flex-col gap-4">
+            {/* Search and Status Row */}
+            <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
+              <div className="flex-1 relative">
+                <Search className="h-4 w-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search orders by name, phone, ID, address"
+                  className="w-full pl-9 pr-3 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <div className="flex items-center gap-3">
+                <select
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value as any)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                  Date
-                  <ChevronDown className={`h-4 w-4 transition-transform ${sortKey==='created_at' && sortDir==='asc' ? 'rotate-180' : ''}`} />
-                </button>
-                <button
-                  onClick={() => toggleSort('total')}
-                  className={`px-3 py-2 rounded-lg border text-sm flex items-center gap-1 ${sortKey==='total' ? 'border-blue-500 text-blue-700 bg-blue-50' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}`}
-                >
-                  Total
-                  <ChevronDown className={`h-4 w-4 transition-transform ${sortKey==='total' && sortDir==='asc' ? 'rotate-180' : ''}`} />
-                </button>
+                  <option value="all">All Statuses</option>
+                  <option value="pending">Pending</option>
+                  <option value="confirmed">Confirmed</option>
+                  <option value="preparing">Preparing</option>
+                  <option value="ready">Ready</option>
+                  <option value="completed">Completed</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => toggleSort('created_at')}
+                    className={`px-3 py-2 rounded-lg border text-sm flex items-center gap-1 ${sortKey==='created_at' ? 'border-blue-500 text-blue-700 bg-blue-50' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+                  >
+                    Date
+                    <ChevronDown className={`h-4 w-4 transition-transform ${sortKey==='created_at' && sortDir==='asc' ? 'rotate-180' : ''}`} />
+                  </button>
+                  <button
+                    onClick={() => toggleSort('total')}
+                    className={`px-3 py-2 rounded-lg border text-sm flex items-center gap-1 ${sortKey==='total' ? 'border-blue-500 text-blue-700 bg-blue-50' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+                  >
+                    Total
+                    <ChevronDown className={`h-4 w-4 transition-transform ${sortKey==='total' && sortDir==='asc' ? 'rotate-180' : ''}`} />
+                  </button>
+                </div>
               </div>
             </div>
+
+            {/* Date Filter and Export Row */}
+            <div className="flex flex-col md:flex-row gap-3 md:items-center justify-between border-t border-gray-200 pt-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-gray-500" />
+                  <span className="text-sm font-medium text-gray-700">Date Range:</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="date"
+                    value={dateFrom}
+                    onChange={(e) => setDateFrom(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="From"
+                  />
+                  <span className="text-gray-500">to</span>
+                  <input
+                    type="date"
+                    value={dateTo}
+                    onChange={(e) => setDateTo(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="To"
+                  />
+                  {(dateFrom || dateTo) && (
+                    <button
+                      onClick={clearDateFilters}
+                      className="px-3 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+              </div>
+              
+              <button
+                onClick={exportToCSV}
+                disabled={exporting || filtered.filter(o => o.status.toLowerCase() === 'completed').length === 0}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed text-sm font-medium"
+              >
+                <Download className="h-4 w-4" />
+                {exporting ? 'Exporting...' : 'Export Completed Orders'}
+              </button>
+            </div>
+
+            {/* Results count */}
+            {(dateFrom || dateTo) && (
+              <div className="text-sm text-gray-600">
+                Showing {filtered.length} order{filtered.length !== 1 ? 's' : ''} 
+                {dateFrom && ` from ${new Date(dateFrom).toLocaleDateString()}`}
+                {dateTo && ` to ${new Date(dateTo).toLocaleDateString()}`}
+              </div>
+            )}
           </div>
         </div>
 
@@ -384,6 +549,36 @@ const OrdersManager: React.FC<OrdersManagerProps> = ({ onBack }) => {
                   </div>
                 </div>
               </div>
+
+              {/* Payment Receipt */}
+              {selectedOrder.receipt_url && (
+                <div className="mb-6">
+                  <h4 className="font-semibold text-gray-900 mb-3 flex items-center">
+                    <ImageIcon className="h-5 w-5 mr-2" />
+                    Payment Receipt
+                  </h4>
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <a
+                      href={selectedOrder.receipt_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block group"
+                    >
+                      <img
+                        src={selectedOrder.receipt_url}
+                        alt="Payment Receipt"
+                        className="w-full max-w-md mx-auto rounded-lg border-2 border-gray-300 group-hover:border-blue-500 transition-colors cursor-pointer"
+                        onError={(e) => {
+                          e.currentTarget.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect fill="%23f3f4f6" width="400" height="300"/%3E%3Ctext fill="%239ca3af" font-family="sans-serif" font-size="18" x="50%25" y="50%25" text-anchor="middle" dominant-baseline="middle"%3EImage not available%3C/text%3E%3C/svg%3E';
+                        }}
+                      />
+                      <p className="text-center text-sm text-blue-600 group-hover:text-blue-700 mt-2">
+                        Click to view full size
+                      </p>
+                    </a>
+                  </div>
+                </div>
+              )}
 
               <div>
                 <h4 className="font-semibold text-gray-900 mb-3">Order Items</h4>

@@ -60,6 +60,7 @@ export interface OrderData {
   referenceNumber?: string;
   total: number;
   notes?: string;
+  receiptUrl?: string;
 }
 
 export type PaymentMethod = 'gcash' | 'maya' | 'bank-transfer';

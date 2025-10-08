@@ -235,9 +235,31 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
             </div>
           </div>
 
+          {/* Stock indicator */}
+          {item.trackInventory && item.stockQuantity !== null && (
+            <div className="mt-3">
+              {item.stockQuantity > item.lowStockThreshold ? (
+                <div className="flex items-center space-x-2 text-xs text-green-700 bg-green-50 px-3 py-2 rounded-lg border border-green-200">
+                  <span className="font-semibold">✓</span>
+                  <span className="font-medium">{item.stockQuantity} in stock</span>
+                </div>
+              ) : item.stockQuantity > 0 ? (
+                <div className="flex items-center space-x-2 text-xs text-orange-700 bg-orange-50 px-3 py-2 rounded-lg border border-orange-200 animate-pulse">
+                  <span className="font-semibold">⚠️</span>
+                  <span className="font-medium">Only {item.stockQuantity} left!</span>
+                </div>
+              ) : (
+                <div className="flex items-center space-x-2 text-xs text-red-700 bg-red-50 px-3 py-2 rounded-lg border border-red-200">
+                  <span className="font-semibold">✕</span>
+                  <span className="font-medium">Out of stock</span>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Add-ons indicator */}
           {item.addOns && item.addOns.length > 0 && (
-            <div className="flex items-center space-x-1 text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded-lg">
+            <div className="flex items-center space-x-1 text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded-lg mt-2">
               <span>+</span>
               <span>{item.addOns.length} add-on{item.addOns.length > 1 ? 's' : ''} available</span>
             </div>
@@ -263,6 +285,28 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
             </div>
 
             <div className="p-6">
+              {/* Stock indicator in modal */}
+              {item.trackInventory && item.stockQuantity !== null && (
+                <div className="mb-6">
+                  {item.stockQuantity > item.lowStockThreshold ? (
+                    <div className="flex items-center space-x-2 text-sm text-green-700 bg-green-50 px-4 py-3 rounded-lg border border-green-200">
+                      <span className="font-semibold">✓</span>
+                      <span className="font-medium">{item.stockQuantity} available in stock</span>
+                    </div>
+                  ) : item.stockQuantity > 0 ? (
+                    <div className="flex items-center space-x-2 text-sm text-orange-700 bg-orange-50 px-4 py-3 rounded-lg border border-orange-200">
+                      <span className="font-semibold">⚠️</span>
+                      <span className="font-medium">Hurry! Only {item.stockQuantity} left in stock</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center space-x-2 text-sm text-red-700 bg-red-50 px-4 py-3 rounded-lg border border-red-200">
+                      <span className="font-semibold">✕</span>
+                      <span className="font-medium">Currently out of stock</span>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Size Variations */}
               {item.variations && item.variations.length > 0 && (
                 <div className="mb-6">

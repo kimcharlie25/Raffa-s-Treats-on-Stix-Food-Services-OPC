@@ -15,6 +15,7 @@ export interface CreateOrderPayload {
   notes?: string;
   total: number;
   items: CartItem[];
+  receiptUrl?: string;
 }
 
 export interface OrderWithItems {
@@ -32,6 +33,7 @@ export interface OrderWithItems {
   total: number;
   status: string;
   created_at: string;
+  receipt_url: string | null;
   order_items: {
     id: string;
     item_id: string;
@@ -147,6 +149,7 @@ export const useOrders = () => {
           notes: payload.notes ?? null,
           total: payload.total,
           ip_address: clientIp ?? null,
+          receipt_url: payload.receiptUrl ?? null,
         })
         .select()
         .single();
