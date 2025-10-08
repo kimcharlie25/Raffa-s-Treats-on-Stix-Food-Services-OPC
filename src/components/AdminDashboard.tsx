@@ -11,12 +11,13 @@ import PaymentMethodManager from './PaymentMethodManager';
 import SiteSettingsManager from './SiteSettingsManager';
 import OrdersManager from './OrdersManager';
 import InventoryManager from './InventoryManager';
+import CustomersManager from './CustomersManager';
 
 const AdminDashboard: React.FC = () => {
   const { user, signOut } = useAuth();
   const { menuItems, loading, addMenuItem, updateMenuItem, deleteMenuItem } = useMenu();
   const { categories } = useCategories();
-  const [currentView, setCurrentView] = useState<'dashboard' | 'items' | 'add' | 'edit' | 'categories' | 'payments' | 'settings' | 'orders' | 'inventory'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'items' | 'add' | 'edit' | 'categories' | 'payments' | 'settings' | 'orders' | 'inventory' | 'customers'>('dashboard');
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -960,6 +961,11 @@ const AdminDashboard: React.FC = () => {
     );
   }
 
+  // Customers View
+  if (currentView === 'customers') {
+    return <CustomersManager onBack={() => setCurrentView('dashboard')} />;
+  }
+
   // Dashboard View
   return (
     <div className="min-h-screen bg-gray-50">
@@ -1090,6 +1096,13 @@ const AdminDashboard: React.FC = () => {
               >
                 <ShoppingCart className="h-5 w-5 text-gray-400" />
                 <span className="font-medium text-gray-900">Manage Orders</span>
+              </button>
+              <button
+                onClick={() => setCurrentView('customers')}
+                className="w-full flex items-center space-x-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-colors duration-200"
+              >
+                <Users className="h-5 w-5 text-gray-400" />
+                <span className="font-medium text-gray-900">Customer Database</span>
               </button>
               <button
                 onClick={() => setCurrentView('settings')}
