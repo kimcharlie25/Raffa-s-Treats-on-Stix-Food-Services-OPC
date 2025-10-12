@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { ArrowLeft, CheckCircle, Clock, XCircle, RefreshCw, ChevronDown, Search, Image as ImageIcon, Download, Calendar, Printer } from 'lucide-react';
 // import { Link } from 'react-router-dom';
 import { useOrders, OrderWithItems } from '../hooks/useOrders';
+import { supabase } from '../lib/supabase';
 
 interface OrdersManagerProps {
   onBack: () => void;
@@ -10,6 +11,7 @@ interface OrdersManagerProps {
 const OrdersManager: React.FC<OrdersManagerProps> = ({ onBack }) => {
   const { orders, loading, error, updateOrderStatus } = useOrders();
   const [selectedOrder, setSelectedOrder] = useState<OrderWithItems | null>(null);
+  const [printOrder, setPrintOrder] = useState<OrderWithItems | null>(null);
   const [updating, setUpdating] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'confirmed' | 'preparing' | 'ready' | 'completed' | 'cancelled'>('all');
@@ -18,6 +20,14 @@ const OrdersManager: React.FC<OrdersManagerProps> = ({ onBack }) => {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [exporting, setExporting] = useState(false);
+  const [autoPrintEnabled, setAutoPrintEnabled] = useState<boolean>(() => {
+    try {
+      const v = localStorage.getItem('raffa_auto_print');
+      return v === '1';
+    } catch { return false; }
+  });
+  const [printQueue, setPrintQueue] = useState<string[]>([]);
+  const [processingPrint, setProcessingPrint] = useState<boolean>(false);
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
@@ -106,6 +116,59 @@ const OrdersManager: React.FC<OrdersManagerProps> = ({ onBack }) => {
       </div>
     );
   };
+
+  // Persist auto-print setting
+  React.useEffect(() => {
+    try {
+      localStorage.setItem('raffa_auto_print', autoPrintEnabled ? '1' : '0');
+    } catch {}
+  }, [autoPrintEnabled]);
+
+  // Subscribe to new orders for auto-print
+  React.useEffect(() => {
+    const channel = supabase
+      .channel('orders-autoprint')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, (payload: any) => {
+        if (!autoPrintEnabled) return;
+        const id = payload?.new?.id as string | undefined;
+        if (id) setPrintQueue((q) => [...q, id]);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [autoPrintEnabled]);
+
+  // Process print queue
+  React.useEffect(() => {
+    const run = async () => {
+      if (!autoPrintEnabled || processingPrint || printQueue.length === 0) return;
+      setProcessingPrint(true);
+      const orderId = printQueue[0];
+      const { data, error } = await supabase
+        .from('orders')
+        .select(`*, order_items (*)`)
+        .eq('id', orderId)
+        .single();
+      if (!error && data) {
+        setPrintOrder(data as OrderWithItems);
+        setTimeout(() => window.print(), 50);
+      } else {
+        setProcessingPrint(false);
+        setPrintQueue((q) => q.slice(1));
+      }
+    };
+    run();
+  }, [autoPrintEnabled, processingPrint, printQueue]);
+
+  // Reset after printing
+  React.useEffect(() => {
+    const handler = () => {
+      setProcessingPrint(false);
+      setPrintQueue((q) => q.slice(1));
+      setPrintOrder(null);
+    };
+    window.addEventListener('afterprint', handler);
+    return () => window.removeEventListener('afterprint', handler);
+  }, []);
 
   const handleStatusUpdate = async (orderId: string, newStatus: string) => {
     try {
@@ -371,6 +434,15 @@ const OrdersManager: React.FC<OrdersManagerProps> = ({ onBack }) => {
                     Total
                     <ChevronDown className={`h-4 w-4 transition-transform ${sortKey==='total' && sortDir==='asc' ? 'rotate-180' : ''}`} />
                   </button>
+                  <label className="ml-3 flex items-center gap-2 text-sm text-gray-700">
+                    <input
+                      type="checkbox"
+                      checked={autoPrintEnabled}
+                      onChange={(e) => setAutoPrintEnabled(e.target.checked)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    Auto-print new orders
+                  </label>
                 </div>
               </div>
             </div>
@@ -483,7 +555,7 @@ const OrdersManager: React.FC<OrdersManagerProps> = ({ onBack }) => {
                             </button>
                             <button
                               onClick={() => {
-                                setSelectedOrder(order);
+                                setPrintOrder(order);
                                 setTimeout(() => window.print(), 50);
                               }}
                               className="px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-100 text-gray-700 inline-flex items-center gap-1"
@@ -547,7 +619,7 @@ const OrdersManager: React.FC<OrdersManagerProps> = ({ onBack }) => {
                       </button>
                       <button
                         onClick={() => {
-                          setSelectedOrder(order);
+                          setPrintOrder(order);
                           setTimeout(() => window.print(), 50);
                         }}
                         className="px-3 py-2 border border-gray-300 rounded-lg text-sm inline-flex items-center justify-center gap-1"
@@ -685,7 +757,7 @@ const OrdersManager: React.FC<OrdersManagerProps> = ({ onBack }) => {
               <div className="flex justify-between mt-4 no-print">
                 <div className="text-sm text-gray-500">Order #{selectedOrder.id.slice(-8).toUpperCase()}</div>
                 <button
-                  onClick={() => setTimeout(() => window.print(), 50)}
+                  onClick={() => { setPrintOrder(selectedOrder); setTimeout(() => window.print(), 50); }}
                   className="px-3 py-2 border border-gray-300 rounded-lg text-sm inline-flex items-center gap-1"
                 >
                   <Printer className="h-4 w-4" />
@@ -697,7 +769,7 @@ const OrdersManager: React.FC<OrdersManagerProps> = ({ onBack }) => {
         </div>
       )}
       {/* Inline printable receipt content (hidden on screen) */}
-      {selectedOrder && <ReceiptInline order={selectedOrder} />}
+      {printOrder && <ReceiptInline order={printOrder} />}
     </div>
   );
 };
