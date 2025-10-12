@@ -6,7 +6,7 @@ The authentication system has been upgraded from a simple client-side password c
 ## What Changed
 
 ### Before
-- Hardcoded password (`ClickEats@Admin!2025`) in the client code
+- Hardcoded password (`Raffa's@Admin!2025`) in the client code
 - Authentication state stored in `localStorage`
 - No backend validation
 - Easily bypassable
@@ -35,7 +35,7 @@ VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 
 ### 3. Create Admin User
 1. Go to Authentication > Users in your Supabase dashboard
-2. Click "Add user" and create an admin user with email `admin@clickeats.com`
+2. Click "Add user" and create an admin user with email `admin@Raffa's.com`
 3. Set a secure password
 4. Optionally, add custom metadata: `{"role": "admin"}`
 

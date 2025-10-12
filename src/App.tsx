@@ -11,6 +11,8 @@ import AdminLogin from './components/AdminLogin';
 import ProtectedRoute from './components/ProtectedRoute';
 import { useMenu } from './hooks/useMenu';
 import { AuthProvider } from './contexts/AuthContext';
+import DesktopCategoryNav from './components/DesktopCategoryNav';
+import ReceiptPrint from './components/ReceiptPrint';
 
 function MainApp() {
   const cart = useCart();
@@ -32,7 +34,7 @@ function MainApp() {
     : menuItems.filter(item => item.category === selectedCategory);
 
   return (
-    <div className="min-h-screen bg-cream-50 font-inter">
+    <div className="min-h-screen bg-[color:var(--raffa-cream)] font-fredoka">
       <Header 
         cartItemsCount={cart.getTotalItems()}
         onCartClick={() => handleViewChange('cart')}
@@ -40,6 +42,12 @@ function MainApp() {
         onCategoryClick={handleCategoryClick}
         selectedCategory={selectedCategory}
       />
+      {currentView === 'menu' && (
+        <DesktopCategoryNav
+          activeCategory={selectedCategory || 'all'}
+          onCategoryClick={handleCategoryClick}
+        />
+      )}
       
       {currentView === 'menu' && (
         <Menu 
@@ -94,6 +102,14 @@ function App() {
                 <AdminDashboard />
               </ProtectedRoute>
             } 
+          />
+          <Route
+            path="/admin/orders/:orderId/print"
+            element={
+              <ProtectedRoute>
+                <ReceiptPrint />
+              </ProtectedRoute>
+            }
           />
         </Routes>
       </Router>

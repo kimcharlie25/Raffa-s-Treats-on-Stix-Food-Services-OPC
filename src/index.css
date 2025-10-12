@@ -2,45 +2,25 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ClickEats Custom Styles */
-.bg-cream-50 {
-  background-color: #fefce8;
+/* Raffa's Treats on Stix – global theme */
+:root {
+  --raffa-yellow: #F4C430;
+  --raffa-orange: #F28C28;
+  --raffa-red: #C83B2B;
+  --raffa-dark: #5A2F21;
+  --raffa-cream: #FFF4D9;
 }
 
-.bg-cream-100 {
-  background-color: #fef3c7;
+body {
+  @apply bg-[color:var(--raffa-cream)] text-[color:var(--raffa-dark)] font-fredoka;
 }
 
-.bg-cream-200 {
-  background-color: #fde68a;
+.btn-brand {
+  @apply bg-[color:var(--raffa-red)] text-white rounded-xl shadow-md hover:shadow-lg transition-all duration-200 hover:bg-red-600;
 }
 
-.border-cream-200 {
-  border-color: #fde68a;
-}
-
-.border-cream-300 {
-  border-color: #fcd34d;
-}
-
-.hover\:bg-cream-50:hover {
-  background-color: #fefce8;
-}
-
-.hover\:bg-cream-100:hover {
-  background-color: #fef3c7;
-}
-
-.hover\:bg-cream-200:hover {
-  background-color: #fde68a;
-}
-
-.hover\:border-cream-400:hover {
-  border-color: #fbbf24;
-}
-
-.focus\:ring-cream-500:focus {
-  --tw-ring-color: #f59e0b;
+.chip-brand {
+  @apply px-3 py-1 rounded-full text-sm bg-[color:var(--raffa-yellow)] text-[color:var(--raffa-dark)];
 }
 
 /* Hide scrollbar for mobile nav */
@@ -67,4 +47,57 @@ img {
   top: -9999px;
   width: 1px;
   height: 1px;
+}
+
+/* Hidden by default; becomes visible during print */
+.print-only {
+  display: none;
+}
+
+/* Print styles for 80mm thermal receipt */
+@media print {
+  @page {
+    size: 80mm auto;
+    margin: 0;
+  }
+
+  body {
+    background: #ffffff !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  .receipt {
+    width: 80mm;
+    padding: 8px 10px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 12px;
+    line-height: 1.4;
+    color: #000;
+  }
+
+  .receipt .divider {
+    border-top: 1px dashed #000;
+    margin: 8px 0;
+  }
+
+  .receipt .totals-row {
+    display: flex;
+    justify-content: space-between;
+  }
+}
+
+/* On-screen preview for receipt */
+.receipt-preview {
+  width: 320px; /* approx 80mm at 96dpi */
+  background: #fff;
+  padding: 8px 10px;
+  border: 1px solid #eee;
+  border-radius: 6px;
 }

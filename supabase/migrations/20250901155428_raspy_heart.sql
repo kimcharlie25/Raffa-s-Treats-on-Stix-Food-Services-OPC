@@ -1,5 +1,5 @@
 /*
-  # Add ClickEats Menu Items
+  # Add Raffa's Menu Items
 
   1. New Menu Items
     - Platter category: Extra Small, Small, Medium, Large platters with dim sum assortments
@@ -73,7 +73,7 @@ INSERT INTO menu_items (name, description, base_price, category, popular, availa
   
   ('Pork & Mushroom Dumpling', 'Savory dumplings with pork and shiitake mushrooms', 160, 'dim-sum', false, true, 'https://images.pexels.com/photos/4518843/pexels-photo-4518843.jpeg?auto=compress&cs=tinysrgb&w=800');
 
--- Update existing items to better match ClickEats branding
+-- Update existing items to better match Raffa's branding
 UPDATE menu_items 
 SET 
   name = 'Har Gow (Shrimp Dumplings)',

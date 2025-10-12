@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { ArrowLeft, CheckCircle, Clock, XCircle, RefreshCw, ChevronDown, Search, Image as ImageIcon, Download, Calendar } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Clock, XCircle, RefreshCw, ChevronDown, Search, Image as ImageIcon, Download, Calendar, Printer } from 'lucide-react';
+// import { Link } from 'react-router-dom';
 import { useOrders, OrderWithItems } from '../hooks/useOrders';
 
 interface OrdersManagerProps {
@@ -54,6 +55,56 @@ const OrdersManager: React.FC<OrdersManagerProps> = ({ onBack }) => {
       default:
         return <Clock className="h-4 w-4" />;
     }
+  };
+
+  const ReceiptInline: React.FC<{ order: OrderWithItems }> = ({ order }) => {
+    return (
+      <div className="receipt print-only">
+        <div className="text-center">
+          <div className="font-bold text-base">Raffa's Treats on Stix</div>
+          <div>Orders Receipt</div>
+          <div>{new Date(order.created_at).toLocaleString()}</div>
+        </div>
+        <div className="divider" />
+        <div>
+          <div><strong>Order:</strong> #{order.id.slice(-8).toUpperCase()}</div>
+          <div><strong>Name:</strong> {order.customer_name}</div>
+          <div><strong>Phone:</strong> {order.contact_number}</div>
+          <div><strong>Service:</strong> {order.service_type}</div>
+          {order.address && <div><strong>Addr:</strong> {order.address}</div>}
+          {order.pickup_time && <div><strong>Pickup:</strong> {order.pickup_time}</div>}
+          {order.party_size && <div><strong>Party:</strong> {order.party_size}</div>}
+          {order.dine_in_time && <div><strong>Dine-in:</strong> {new Date(order.dine_in_time).toLocaleString()}</div>}
+        </div>
+        <div className="divider" />
+        <div>
+          {order.order_items.map((item) => (
+            <div key={item.id} className="totals-row">
+              <div>
+                {item.name}
+                {item.variation ? ` (${item.variation.name})` : ''}
+                {item.add_ons && item.add_ons.length > 0 ? ` + ${item.add_ons.map((a: any) => a.quantity > 1 ? `${a.name} x${a.quantity}` : a.name).join(', ')}` : ''}
+                {' '}x{item.quantity}
+              </div>
+              <div>₱{item.subtotal.toFixed(2)}</div>
+            </div>
+          ))}
+        </div>
+        <div className="divider" />
+        <div className="totals-row">
+          <div><strong>Total</strong></div>
+          <div><strong>₱{order.total.toFixed(2)}</strong></div>
+        </div>
+        {order.notes && (
+          <>
+            <div className="divider" />
+            <div><strong>Notes:</strong> {order.notes}</div>
+          </>
+        )}
+        <div className="divider" />
+        <div className="text-center">Thank you!</div>
+      </div>
+    );
   };
 
   const handleStatusUpdate = async (orderId: string, newStatus: string) => {
@@ -430,6 +481,17 @@ const OrdersManager: React.FC<OrdersManagerProps> = ({ onBack }) => {
                             >
                               View
                             </button>
+                            <button
+                              onClick={() => {
+                                setSelectedOrder(order);
+                                setTimeout(() => window.print(), 50);
+                              }}
+                              className="px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-100 text-gray-700 inline-flex items-center gap-1"
+                              title="Print receipt"
+                            >
+                              <Printer className="h-4 w-4" />
+                              Print
+                            </button>
                             <select
                               value={order.status}
                               onChange={(e) => handleStatusUpdate(order.id, e.target.value)}
@@ -482,6 +544,17 @@ const OrdersManager: React.FC<OrdersManagerProps> = ({ onBack }) => {
                         className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-100"
                       >
                         Details
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSelectedOrder(order);
+                          setTimeout(() => window.print(), 50);
+                        }}
+                        className="px-3 py-2 border border-gray-300 rounded-lg text-sm inline-flex items-center justify-center gap-1"
+                        title="Print receipt"
+                      >
+                        <Printer className="h-4 w-4" />
+                        Print
                       </button>
                       <select
                         value={order.status}
@@ -608,10 +681,23 @@ const OrdersManager: React.FC<OrdersManagerProps> = ({ onBack }) => {
                   ))}
                 </div>
               </div>
+
+              <div className="flex justify-between mt-4 no-print">
+                <div className="text-sm text-gray-500">Order #{selectedOrder.id.slice(-8).toUpperCase()}</div>
+                <button
+                  onClick={() => setTimeout(() => window.print(), 50)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm inline-flex items-center gap-1"
+                >
+                  <Printer className="h-4 w-4" />
+                  Print Receipt
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
+      {/* Inline printable receipt content (hidden on screen) */}
+      {selectedOrder && <ReceiptInline order={selectedOrder} />}
     </div>
   );
 };

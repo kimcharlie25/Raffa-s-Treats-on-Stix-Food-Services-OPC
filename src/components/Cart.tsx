@@ -21,6 +21,14 @@ const Cart: React.FC<CartProps> = ({
   onContinueShopping,
   onCheckout
 }) => {
+  const toTitleCase = (text: string) => {
+    return text
+      .toLowerCase()
+      .split(/\s+/)
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
   if (cartItems.length === 0) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-12">
@@ -49,8 +57,7 @@ const Cart: React.FC<CartProps> = ({
           <ArrowLeft className="h-5 w-5" />
           <span>Continue Shopping</span>
         </button>
-        <h1 className="text-3xl font-playfair font-semibold text-black">Your Cart</h1>
-        <h1 className="text-3xl font-noto font-semibold text-black">Your Cart</h1>
+        <h1 className="text-3xl font-lilita text-[color:var(--raffa-dark)]">Your Cart</h1>
         <button
           onClick={clearCart}
           className="text-red-500 hover:text-red-600 transition-colors duration-200"
@@ -64,12 +71,14 @@ const Cart: React.FC<CartProps> = ({
           <div key={item.id} className={`p-6 ${index !== cartItems.length - 1 ? 'border-b border-cream-200' : ''}`}>
             <div className="flex items-center justify-between">
               <div className="flex-1">
-                <h3 className="text-lg font-noto font-medium text-black mb-1">{item.name}</h3>
+                <h3 className="text-base sm:text-lg font-semibold text-[color:var(--raffa-dark)] leading-snug mb-1 break-words">
+                  {toTitleCase(item.name)}
+                </h3>
                 {item.selectedVariation && (
-                  <p className="text-sm text-gray-500 mb-1">Size: {item.selectedVariation.name}</p>
+                  <p className="text-sm text-[color:var(--raffa-dark)]/60 mb-0.5">Size: {item.selectedVariation.name}</p>
                 )}
                 {item.selectedAddOns && item.selectedAddOns.length > 0 && (
-                  <p className="text-sm text-gray-500 mb-1">
+                  <p className="text-sm text-[color:var(--raffa-dark)]/60 mb-0.5">
                     Add-ons: {item.selectedAddOns.map(addOn => 
                       addOn.quantity && addOn.quantity > 1 
                         ? `${addOn.name} x${addOn.quantity}`
@@ -77,11 +86,11 @@ const Cart: React.FC<CartProps> = ({
                     ).join(', ')}
                   </p>
                 )}
-                <p className="text-lg font-semibold text-black">₱{item.totalPrice} each</p>
+                <p className="text-xs sm:text-sm text-[color:var(--raffa-dark)]/70">₱{item.totalPrice.toFixed(2)} each</p>
               </div>
               
               <div className="flex items-center space-x-4 ml-4">
-                <div className="flex items-center space-x-3 bg-yellow-100 rounded-full p-1">
+                <div className="flex items-center space-x-3 bg-yellow-100 rounded-full p-1 border border-yellow-300">
                   <button
                     onClick={() => updateQuantity(item.id, item.quantity - 1)}
                     className="p-2 hover:bg-yellow-200 rounded-full transition-colors duration-200"
@@ -98,7 +107,7 @@ const Cart: React.FC<CartProps> = ({
                 </div>
                 
                 <div className="text-right">
-                  <p className="text-lg font-semibold text-black">₱{item.totalPrice * item.quantity}</p>
+                  <p className="text-lg font-semibold text-black">₱{(item.totalPrice * item.quantity).toFixed(2)}</p>
                 </div>
                 
                 <button
@@ -114,14 +123,14 @@ const Cart: React.FC<CartProps> = ({
       </div>
 
       <div className="bg-white rounded-xl shadow-sm p-6">
-        <div className="flex items-center justify-between text-2xl font-noto font-semibold text-black mb-6">
+        <div className="flex items-center justify-between text-2xl font-fredoka font-semibold text-[color:var(--raffa-dark)] mb-6">
           <span>Total:</span>
-          <span>₱{parseFloat(getTotalPrice() || 0).toFixed(2)}</span>
+          <span>₱{Number(getTotalPrice()).toFixed(2)}</span>
         </div>
         
         <button
           onClick={onCheckout}
-          className="w-full bg-red-600 text-white py-4 rounded-xl hover:bg-red-700 transition-all duration-200 transform hover:scale-[1.02] font-medium text-lg"
+          className="w-full bg-[color:var(--raffa-red)] text-white py-4 rounded-xl hover:bg-red-700 transition-all duration-200 transform hover:scale-[1.02] font-medium text-lg"
         >
           Proceed to Checkout
         </button>

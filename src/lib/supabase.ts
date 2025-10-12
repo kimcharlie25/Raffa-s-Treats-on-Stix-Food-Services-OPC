@@ -223,6 +223,7 @@ export type Database = {
           total: number;
           status: string;
           ip_address: string | null;
+          receipt_url: string | null;
           created_at: string;
         };
         Insert: {
@@ -240,6 +241,7 @@ export type Database = {
           total: number;
           status?: string;
           ip_address?: string | null;
+          receipt_url?: string | null;
           created_at?: string;
         };
         Update: {
@@ -257,6 +259,7 @@ export type Database = {
           total?: number;
           status?: string;
           ip_address?: string | null;
+          receipt_url?: string | null;
           created_at?: string;
         };
       };

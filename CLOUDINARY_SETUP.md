@@ -37,7 +37,7 @@ This implementation allows customers to upload payment receipt images during che
 3. Scroll to **Upload presets** section
 4. Click **Add upload preset**
 5. Configure the preset:
-   - **Preset name**: `clickeats_receipts`
+   - **Preset name**: `Raffa's_receipts`
    - **Signing Mode**: Select **Unsigned**
    - **Folder**: `receipts` (optional but recommended)
    - **Upload Manipulations** → **Quality**: 80 (for optimization)
@@ -51,7 +51,7 @@ Create a `.env` file in your project root:
 ```bash
 # Cloudinary Configuration
 VITE_CLOUDINARY_CLOUD_NAME=dgo9es1ew
-VITE_CLOUDINARY_UPLOAD_PRESET=clickeats_receipts
+VITE_CLOUDINARY_UPLOAD_PRESET=Raffas_receipts
 ```
 
 **Note**: Your cloud name `dgo9es1ew` is extracted from your CLOUDINARY_URL.
@@ -136,7 +136,7 @@ npm run dev
 - Restart dev server after creating .env
 
 ### Upload Fails with "Invalid upload preset"
-- Check that upload preset name matches exactly: `clickeats_receipts`
+- Check that upload preset name matches exactly: `Raffa's_receipts`
 - Verify preset is set to "Unsigned" mode
 - Check cloud name is correct
 

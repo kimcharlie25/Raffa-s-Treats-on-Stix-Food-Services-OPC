@@ -70,7 +70,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   // Check if user is admin (you can customize this logic based on your needs)
-  const isAdmin = user?.email === 'admin@clickeats.com' || user?.user_metadata?.role === 'admin';
+  const isAdmin = user?.email === 'admin@Raffas.com' || user?.user_metadata?.role === 'admin';
 
   const value = {
     user,

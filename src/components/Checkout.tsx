@@ -164,7 +164,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack }) =>
       : '';
     
     const orderDetails = `
-🛒 ClickEats ORDER
+🛒 Raffa's ORDER
 
 👤 Customer: ${customerName}
 📞 Contact: ${contactNumber}
@@ -199,7 +199,7 @@ ${serviceType === 'delivery' ? `🛵 DELIVERY FEE:` : ''}
 
 ${notes ? `📝 Notes: ${notes}` : ''}
 
-Please confirm this order to proceed. Thank you for choosing ClickEats! 🥟
+Please confirm this order to proceed. Thank you for choosing Raffa's! 🥟
     `.trim();
 
     const pageId = '61579693577478';
@@ -236,13 +236,13 @@ Please confirm this order to proceed. Thank you for choosing ClickEats! 🥟
             <ArrowLeft className="h-5 w-5" />
             <span>Back to Cart</span>
           </button>
-          <h1 className="text-3xl font-noto font-semibold text-black ml-8">Order Details</h1>
+          <h1 className="text-3xl font-lilita text-[color:var(--raffa-dark)] ml-8">Order Details</h1>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Order Summary */}
           <div className="bg-white rounded-xl shadow-sm p-6">
-            <h2 className="text-2xl font-noto font-medium text-black mb-6">Order Summary</h2>
+            <h2 className="text-2xl font-fredoka font-medium text-[color:var(--raffa-dark)] mb-6">Order Summary</h2>
             
             <div className="space-y-4 mb-6">
               {cartItems.map((item) => (
@@ -264,8 +264,8 @@ Please confirm this order to proceed. Thank you for choosing ClickEats! 🥟
               ))}
             </div>
             
-            <div className="border-t border-red-200 pt-4">
-              <div className="flex items-center justify-between text-2xl font-noto font-semibold text-black">
+            <div className="border-t border-yellow-300 pt-4">
+              <div className="flex items-center justify-between text-2xl font-fredoka font-semibold text-[color:var(--raffa-dark)]">
                 <span>Total:</span>
                 <span>₱{totalPrice}</span>
               </div>
@@ -274,7 +274,7 @@ Please confirm this order to proceed. Thank you for choosing ClickEats! 🥟
 
           {/* Customer Details Form */}
           <div className="bg-white rounded-xl shadow-sm p-6">
-            <h2 className="text-2xl font-noto font-medium text-black mb-6">Customer Information</h2>
+            <h2 className="text-2xl font-fredoka font-medium text-[color:var(--raffa-dark)] mb-6">Customer Information</h2>
             
             <form className="space-y-6">
               {/* Customer Information */}
@@ -284,7 +284,7 @@ Please confirm this order to proceed. Thank you for choosing ClickEats! 🥟
                   type="text"
                   value={customerName}
                   onChange={(e) => setCustomerName(e.target.value)}
-                  className="w-full px-4 py-3 border border-red-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
+                  className="w-full px-4 py-3 border border-yellow-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-200"
                   placeholder="Enter your full name"
                   required
                 />
@@ -296,7 +296,7 @@ Please confirm this order to proceed. Thank you for choosing ClickEats! 🥟
                   type="tel"
                   value={contactNumber}
                   onChange={(e) => setContactNumber(e.target.value)}
-                  className="w-full px-4 py-3 border border-red-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
+                  className="w-full px-4 py-3 border border-yellow-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-200"
                   placeholder="09XX XXX XXXX"
                   required
                 />
@@ -315,10 +315,10 @@ Please confirm this order to proceed. Thank you for choosing ClickEats! 🥟
                       key={option.value}
                       type="button"
                       onClick={() => setServiceType(option.value as ServiceType)}
-                      className={`p-4 rounded-lg border-2 transition-all duration-200 ${
+                    className={`p-4 rounded-lg border-2 transition-all duration-200 ${
                         serviceType === option.value
-                          ? 'border-red-600 bg-red-600 text-white'
-                          : 'border-red-300 bg-white text-gray-700 hover:border-red-400'
+                          ? 'border-yellow-500 bg-yellow-500 text-[color:var(--raffa-dark)]'
+                          : 'border-yellow-300 bg-white text-gray-700 hover:border-yellow-400'
                       }`}
                     >
                       <div className="text-2xl mb-1">{option.icon}</div>
@@ -337,7 +337,7 @@ Please confirm this order to proceed. Thank you for choosing ClickEats! 🥟
                       <button
                         type="button"
                         onClick={() => setPartySize(Math.max(1, partySize - 1))}
-                        className="w-10 h-10 rounded-lg border-2 border-red-300 flex items-center justify-center text-red-600 hover:border-red-400 hover:bg-red-50 transition-all duration-200"
+                        className="w-10 h-10 rounded-lg border-2 border-yellow-300 flex items-center justify-center text-[color:var(--raffa-dark)] hover:border-yellow-400 hover:bg-yellow-50 transition-all duration-200"
                       >
                         -
                       </button>
@@ -345,7 +345,7 @@ Please confirm this order to proceed. Thank you for choosing ClickEats! 🥟
                       <button
                         type="button"
                         onClick={() => setPartySize(Math.min(20, partySize + 1))}
-                        className="w-10 h-10 rounded-lg border-2 border-red-300 flex items-center justify-center text-red-600 hover:border-red-400 hover:bg-red-50 transition-all duration-200"
+                        className="w-10 h-10 rounded-lg border-2 border-yellow-300 flex items-center justify-center text-[color:var(--raffa-dark)] hover:border-yellow-400 hover:bg-yellow-50 transition-all duration-200"
                       >
                         +
                       </button>
@@ -359,7 +359,7 @@ Please confirm this order to proceed. Thank you for choosing ClickEats! 🥟
                       type="datetime-local"
                       value={dineInTime}
                       onChange={(e) => setDineInTime(e.target.value)}
-                      className="w-full px-4 py-3 border border-red-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
+                    className="w-full px-4 py-3 border border-yellow-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-200"
                       required
                     />
                     <p className="text-xs text-gray-500 mt-1">Please select your preferred dining time</p>
@@ -385,8 +385,8 @@ Please confirm this order to proceed. Thank you for choosing ClickEats! 🥟
                           onClick={() => setPickupTime(option.value)}
                           className={`p-3 rounded-lg border-2 transition-all duration-200 text-sm ${
                             pickupTime === option.value
-                              ? 'border-red-600 bg-red-600 text-white'
-                              : 'border-red-300 bg-white text-gray-700 hover:border-red-400'
+                              ? 'border-yellow-500 bg-yellow-500 text-[color:var(--raffa-dark)]'
+                              : 'border-yellow-300 bg-white text-gray-700 hover:border-yellow-400'
                           }`}
                         >
                           <Clock className="h-4 w-4 mx-auto mb-1" />
@@ -400,7 +400,7 @@ Please confirm this order to proceed. Thank you for choosing ClickEats! 🥟
                         type="text"
                         value={customTime}
                         onChange={(e) => setCustomTime(e.target.value)}
-                        className="w-full px-4 py-3 border border-red-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
+                        className="w-full px-4 py-3 border border-yellow-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-200"
                         placeholder="e.g., 45 minutes, 1 hour, 2:30 PM"
                         required
                       />
@@ -417,7 +417,7 @@ Please confirm this order to proceed. Thank you for choosing ClickEats! 🥟
                     <textarea
                       value={address}
                       onChange={(e) => setAddress(e.target.value)}
-                      className="w-full px-4 py-3 border border-red-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
+                    className="w-full px-4 py-3 border border-yellow-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-200"
                       placeholder="Enter your complete delivery address"
                       rows={3}
                       required
@@ -430,7 +430,7 @@ Please confirm this order to proceed. Thank you for choosing ClickEats! 🥟
                       type="text"
                       value={landmark}
                       onChange={(e) => setLandmark(e.target.value)}
-                      className="w-full px-4 py-3 border border-red-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
+                    className="w-full px-4 py-3 border border-yellow-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-200"
                       placeholder="e.g., Near McDonald's, Beside 7-Eleven, In front of school"
                     />
                   </div>
@@ -454,7 +454,7 @@ Please confirm this order to proceed. Thank you for choosing ClickEats! 🥟
                 disabled={!isDetailsValid}
                 className={`w-full py-4 rounded-xl font-medium text-lg transition-all duration-200 transform ${
                   isDetailsValid
-                    ? 'bg-red-600 text-white hover:bg-red-700 hover:scale-[1.02]'
+                    ? 'bg-[color:var(--raffa-red)] text-white hover:bg-red-700 hover:scale-[1.02]'
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 }`}
               >
@@ -478,7 +478,7 @@ Please confirm this order to proceed. Thank you for choosing ClickEats! 🥟
           <ArrowLeft className="h-5 w-5" />
           <span>Back to Details</span>
         </button>
-        <h1 className="text-3xl font-noto font-semibold text-black ml-8">Payment</h1>
+        <h1 className="text-3xl font-lilita text-[color:var(--raffa-dark)] ml-8">Payment</h1>
       </div>
 
       {uiNotice && (
@@ -490,7 +490,7 @@ Please confirm this order to proceed. Thank you for choosing ClickEats! 🥟
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Payment Method Selection */}
         <div className="bg-white rounded-xl shadow-sm p-6">
-          <h2 className="text-2xl font-noto font-medium text-black mb-6">Choose Payment Method</h2>
+          <h2 className="text-2xl font-fredoka font-medium text-[color:var(--raffa-dark)] mb-6">Choose Payment Method</h2>
           
           <div className="grid grid-cols-1 gap-4 mb-6">
             {paymentMethods.map((method) => (
@@ -500,8 +500,8 @@ Please confirm this order to proceed. Thank you for choosing ClickEats! 🥟
                 onClick={() => setPaymentMethod(method.id as PaymentMethod)}
                 className={`p-4 rounded-lg border-2 transition-all duration-200 flex items-center space-x-3 ${
                   paymentMethod === method.id
-                    ? 'border-red-600 bg-red-600 text-white'
-                    : 'border-red-300 bg-white text-gray-700 hover:border-red-400'
+                    ? 'border-yellow-500 bg-yellow-500 text-[color:var(--raffa-dark)]'
+                    : 'border-yellow-300 bg-white text-gray-700 hover:border-yellow-400'
                 }`}
               >
                 <span className="text-2xl">💳</span>
@@ -512,20 +512,20 @@ Please confirm this order to proceed. Thank you for choosing ClickEats! 🥟
 
           {/* Payment Details with QR Code */}
           {selectedPaymentMethod && (
-            <div className="bg-red-50 rounded-lg p-6 mb-6">
+            <div className="bg-yellow-50 rounded-lg p-6 mb-6">
               <h3 className="font-medium text-black mb-4">Payment Details</h3>
               <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div className="flex-1">
                   <p className="text-sm text-gray-600 mb-1">{selectedPaymentMethod.name}</p>
                   <p className="font-mono text-black font-medium">{selectedPaymentMethod.account_number}</p>
                   <p className="text-sm text-gray-600 mb-3">Account Name: {selectedPaymentMethod.account_name}</p>
-                  <p className="text-xl font-semibold text-black">Amount: ₱{totalPrice}</p>
+                  <p className="text-xl font-semibold text-[color:var(--raffa-dark)]">Amount: ₱{totalPrice}</p>
                 </div>
                 <div className="flex-shrink-0">
                   <img 
                     src={selectedPaymentMethod.qr_code_url} 
                     alt={`${selectedPaymentMethod.name} QR Code`}
-                    className="w-32 h-32 rounded-lg border-2 border-red-300 shadow-sm"
+                    className="w-32 h-32 rounded-lg border-2 border-yellow-300 shadow-sm"
                     onError={(e) => {
                       e.currentTarget.src = 'https://images.pexels.com/photos/8867482/pexels-photo-8867482.jpeg?auto=compress&cs=tinysrgb&w=300&h=300&fit=crop';
                     }}
@@ -537,17 +537,17 @@ Please confirm this order to proceed. Thank you for choosing ClickEats! 🥟
           )}
 
           {/* Receipt Upload */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
             <h4 className="font-medium text-black mb-3">📸 Upload Payment Receipt</h4>
             
             {!receiptPreview ? (
               <div>
                 <label
                   htmlFor="receipt-upload"
-                  className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-blue-300 rounded-lg cursor-pointer bg-white hover:bg-blue-50 transition-colors"
+                  className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-orange-300 rounded-lg cursor-pointer bg-white hover:bg-orange-50 transition-colors"
                 >
                   <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                    <Upload className="h-8 w-8 text-blue-500 mb-2" />
+                    <Upload className="h-8 w-8 text-orange-500 mb-2" />
                     <p className="text-sm text-gray-600">
                       <span className="font-semibold">Click to select receipt</span> or drag and drop
                     </p>
@@ -584,7 +584,7 @@ Please confirm this order to proceed. Thank you for choosing ClickEats! 🥟
                     <span className="text-sm font-medium">Receipt ready! Will be saved with your order.</span>
                   </div>
                 ) : (
-                  <div className="flex items-center space-x-2 text-blue-600 bg-blue-50 px-3 py-2 rounded-lg">
+                  <div className="flex items-center space-x-2 text-orange-600 bg-orange-50 px-3 py-2 rounded-lg">
                     <Upload className="h-5 w-5" />
                     <span className="text-sm font-medium">Receipt selected. Will upload when you place order.</span>
                   </div>
@@ -606,10 +606,10 @@ Please confirm this order to proceed. Thank you for choosing ClickEats! 🥟
 
         {/* Order Summary */}
         <div className="bg-white rounded-xl shadow-sm p-6">
-          <h2 className="text-2xl font-noto font-medium text-black mb-6">Final Order Summary</h2>
+          <h2 className="text-2xl font-fredoka font-medium text-[color:var(--raffa-dark)] mb-6">Final Order Summary</h2>
           
           <div className="space-y-4 mb-6">
-            <div className="bg-red-50 rounded-lg p-4">
+            <div className="bg-yellow-50 rounded-lg p-4">
               <h4 className="font-medium text-black mb-2">Customer Details</h4>
               <p className="text-sm text-gray-600">Name: {customerName}</p>
               <p className="text-sm text-gray-600">Contact: {contactNumber}</p>
@@ -667,8 +667,8 @@ Please confirm this order to proceed. Thank you for choosing ClickEats! 🥟
             ))}
           </div>
           
-          <div className="border-t border-red-200 pt-4 mb-6">
-            <div className="flex items-center justify-between text-2xl font-noto font-semibold text-black">
+          <div className="border-t border-yellow-300 pt-4 mb-6">
+            <div className="flex items-center justify-between text-2xl font-fredoka font-semibold text-[color:var(--raffa-dark)]">
               <span>Total:</span>
               <span>₱{totalPrice}</span>
             </div>
@@ -677,7 +677,7 @@ Please confirm this order to proceed. Thank you for choosing ClickEats! 🥟
           <button
             onClick={handlePlaceOrder}
             disabled={creating || uploadingReceipt}
-            className={`w-full py-4 rounded-xl font-medium text-lg transition-all duration-200 transform ${creating || uploadingReceipt ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-red-600 text-white hover:bg-red-700 hover:scale-[1.02]'}`}
+            className={`w-full py-4 rounded-xl font-medium text-lg transition-all duration-200 transform ${creating || uploadingReceipt ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-[color:var(--raffa-red)] text-white hover:bg-red-700 hover:scale-[1.02]'}`}
           >
             {uploadingReceipt ? (
               <span className="flex items-center justify-center space-x-2">

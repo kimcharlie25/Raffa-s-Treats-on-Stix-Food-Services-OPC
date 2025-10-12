@@ -4,34 +4,49 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Raffa's Treats on Stix palette
+        raffa: {
+          yellow: '#F4C430', // primary brand yellow (approx)
+          orange: '#F28C28', // secondary orange
+          red: '#C83B2B', // warm red accents
+          dark: '#5A2F21', // chocolate brown
+          cream: '#FFF4D9' // warm cream background
+        },
         red: {
-          50: '#fef2f2',
-          100: '#fee2e2',
-          200: '#fecaca',
-          300: '#fca5a5',
-          400: '#f87171',
-          500: '#ef4444',
-          600: '#dc2626',
-          700: '#b91c1c',
-          800: '#991b1b',
-          900: '#7f1d1d'
+          50: '#fff1f1',
+          100: '#ffd9d6',
+          200: '#ffb4ad',
+          300: '#ff8f84',
+          400: '#ff6a5b',
+          500: '#C83B2B',
+          600: '#a33124',
+          700: '#7f271d',
+          800: '#5a1d16',
+          900: '#36130f'
         },
         yellow: {
-          50: '#fefce8',
-          100: '#fef3c7',
-          200: '#fde68a',
-          300: '#fcd34d',
-          400: '#fbbf24',
-          500: '#f59e0b',
-          600: '#d97706',
-          700: '#b45309',
-          800: '#92400e',
-          900: '#78350f'
+          50: '#fff8e6',
+          100: '#fff1cc',
+          200: '#ffe399',
+          300: '#ffd666',
+          400: '#ffc933',
+          500: '#F4C430',
+          600: '#d1a82a',
+          700: '#ae8d23',
+          800: '#8b711c',
+          900: '#685615'
+        },
+        orange: {
+          500: '#F28C28'
+        },
+        brown: {
+          700: '#5A2F21'
         }
       },
       fontFamily: {
-        'inter': ['Inter', 'sans-serif'],
-        'noto': ['Noto Serif', 'serif']
+        'fredoka': ['Fredoka', 'system-ui', 'sans-serif'],
+        'lilita': ['"Lilita One"', 'cursive'],
+        'inter': ['Fredoka', 'system-ui', 'sans-serif']
       },
       animation: {
         'fade-in': 'fadeIn 0.5s ease-in-out',
