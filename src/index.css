@@ -65,6 +65,19 @@ img {
     background: #ffffff !important;
   }
 
+  /* Hide everything except the receipt during print */
+  body * {
+    visibility: hidden !important;
+  }
+  .receipt, .receipt * {
+    visibility: visible !important;
+  }
+  .receipt {
+    position: absolute;
+    left: 0;
+    top: 0;
+  }
+
   .no-print {
     display: none !important;
   }
