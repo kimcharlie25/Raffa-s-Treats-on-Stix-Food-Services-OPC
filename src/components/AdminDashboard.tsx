@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Edit, Trash2, Save, X, ArrowLeft, Coffee, TrendingUp, Package, Users, FolderOpen, CreditCard, Settings, ShoppingCart, LogOut, Boxes } from 'lucide-react';
+import { Plus, Edit, Trash2, Save, X, ArrowLeft, Coffee, TrendingUp, Package, Users, FolderOpen, CreditCard, Settings, ShoppingCart, LogOut, Boxes, ArrowUpDown } from 'lucide-react';
 import { MenuItem, Variation, AddOn } from '../types';
 import { addOnCategories } from '../data/menuData';
 import { useMenu } from '../hooks/useMenu';
@@ -13,12 +13,13 @@ import SiteSettingsManager from './SiteSettingsManager';
 import OrdersManager from './OrdersManager';
 import InventoryManager from './InventoryManager';
 import CustomersManager from './CustomersManager';
+import MenuItemReorder from './MenuItemReorder';
 
 const AdminDashboard: React.FC = () => {
   const { user, signOut } = useAuth();
-  const { menuItems, loading, addMenuItem, updateMenuItem, deleteMenuItem } = useMenu();
+  const { menuItems, loading, addMenuItem, updateMenuItem, deleteMenuItem, reorderMenuItems } = useMenu();
   const { categories } = useCategories();
-  const [currentView, setCurrentView] = useState<'dashboard' | 'items' | 'add' | 'edit' | 'categories' | 'payments' | 'settings' | 'orders' | 'inventory' | 'customers' | 'account'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'items' | 'add' | 'edit' | 'categories' | 'payments' | 'settings' | 'orders' | 'inventory' | 'customers' | 'account' | 'reorder'>('dashboard');
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -333,36 +334,39 @@ const AdminDashboard: React.FC = () => {
   // Form View (Add/Edit)
   if (currentView === 'add' || currentView === 'edit') {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="bg-white shadow-sm border-b">
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-red-50">
+        <div className="bg-gradient-to-r from-red-600 to-red-700 shadow-lg">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
+            <div className="flex items-center justify-between h-20">
               <div className="flex items-center space-x-4">
                 <button
                   onClick={handleCancel}
-                  className="flex items-center space-x-2 text-gray-600 hover:text-black transition-colors duration-200"
+                  className="flex items-center space-x-2 px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white rounded-lg transition-all duration-200"
                 >
                   <ArrowLeft className="h-5 w-5" />
-                  <span>Back</span>
+                  <span className="hidden sm:inline">Back</span>
                 </button>
-                <h1 className="text-2xl font-playfair font-semibold text-black">
-                  {currentView === 'add' ? 'Add New Item' : 'Edit Item'}
-                </h1>
+                <div>
+                  <h1 className="text-2xl font-playfair font-bold text-white">
+                    {currentView === 'add' ? 'Add New Item' : 'Edit Item'}
+                  </h1>
+                  <p className="text-xs text-red-100">Menu Management</p>
+                </div>
               </div>
               <div className="flex space-x-3">
                 <button
                   onClick={handleCancel}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200 flex items-center space-x-2"
+                  className="px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white rounded-lg transition-all duration-200 flex items-center space-x-2"
                 >
                   <X className="h-4 w-4" />
-                  <span>Cancel</span>
+                  <span className="hidden sm:inline">Cancel</span>
                 </button>
                 <button
                   onClick={handleSaveItem}
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 flex items-center space-x-2"
+                  className="px-4 py-2 bg-white text-red-600 hover:bg-gray-100 rounded-lg transition-all duration-200 flex items-center space-x-2 font-semibold shadow-lg"
                 >
                   <Save className="h-4 w-4" />
-                  <span>Save</span>
+                  <span>Save Item</span>
                 </button>
               </div>
             </div>
@@ -370,8 +374,13 @@ const AdminDashboard: React.FC = () => {
         </div>
 
         <div className="max-w-4xl mx-auto px-4 py-8">
-          <div className="bg-white rounded-xl shadow-sm p-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+            <div className="bg-gradient-to-r from-red-50 to-orange-50 px-8 py-6 border-b border-gray-100">
+              <h2 className="text-xl font-playfair font-semibold text-gray-900">Item Details</h2>
+              <p className="text-sm text-gray-600 mt-1">Fill in the information below to {currentView === 'add' ? 'add a new' : 'edit this'} menu item</p>
+            </div>
+            <div className="p-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
               <div>
                 <label className="block text-sm font-medium text-black mb-2">Item Name *</label>
                 <input
@@ -642,6 +651,7 @@ const AdminDashboard: React.FC = () => {
                 </div>
               ))}
             </div>
+            </div>
           </div>
         </div>
       </div>
@@ -651,40 +661,38 @@ const AdminDashboard: React.FC = () => {
   // Items List View
   if (currentView === 'items') {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <div className="bg-white shadow-sm border-b">
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-red-50">
+        <div className="bg-gradient-to-r from-red-600 to-red-700 shadow-lg">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
+            <div className="flex items-center justify-between h-20">
               <div className="flex items-center space-x-4">
                 <button
                   onClick={() => setCurrentView('dashboard')}
-                  className="flex items-center space-x-2 text-gray-600 hover:text-black transition-colors duration-200"
+                  className="flex items-center space-x-2 px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white rounded-lg transition-all duration-200"
                 >
                   <ArrowLeft className="h-5 w-5" />
-                  <span>Dashboard</span>
+                  <span className="hidden sm:inline">Dashboard</span>
                 </button>
-                <h1 className="text-2xl font-playfair font-semibold text-black">Menu Items</h1>
+                <div>
+                  <h1 className="text-2xl font-playfair font-bold text-white">Menu Items</h1>
+                  <p className="text-xs text-red-100">Manage your menu items</p>
+                </div>
               </div>
               <div className="flex items-center space-x-3">
                 {showBulkActions && (
-                  <div className="flex items-center space-x-2">
-                    <span className="text-sm text-gray-600">
-                      {selectedItems.length} item(s) selected
+                  <div className="hidden sm:flex items-center space-x-2 px-3 py-2 bg-white/10 backdrop-blur-sm rounded-lg">
+                    <span className="text-sm text-white font-medium">
+                      {selectedItems.length} selected
                     </span>
-                    <button
-                      onClick={() => setShowBulkActions(!showBulkActions)}
-                      className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200"
-                    >
-                      <span>Bulk Actions</span>
-                    </button>
                   </div>
                 )}
                 <button
                   onClick={handleAddItem}
-                  className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors duration-200"
+                  className="flex items-center space-x-2 bg-white text-red-600 hover:bg-gray-100 px-4 py-2 rounded-lg transition-all duration-200 font-semibold shadow-lg"
                 >
                   <Plus className="h-4 w-4" />
-                  <span>Add New Item</span>
+                  <span className="hidden sm:inline">Add New Item</span>
+                  <span className="sm:hidden">Add</span>
                 </button>
               </div>
             </div>
@@ -694,17 +702,22 @@ const AdminDashboard: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 py-8">
           {/* Bulk Actions Panel */}
           {showBulkActions && selectedItems.length > 0 && (
-            <div className="bg-white rounded-xl shadow-sm p-6 mb-6 border-l-4 border-blue-500">
+            <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-2xl shadow-lg p-6 mb-6 border border-orange-100">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                  <h3 className="text-lg font-medium text-black mb-1">Bulk Actions</h3>
-                  <p className="text-sm text-gray-600">{selectedItems.length} item(s) selected</p>
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-orange-600 rounded-lg">
+                    <Boxes className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">Bulk Actions</h3>
+                    <p className="text-sm text-gray-600">{selectedItems.length} item(s) selected</p>
+                  </div>
                 </div>
                 
                 <div className="flex flex-col sm:flex-row gap-3">
                   {/* Change Category */}
-                  <div className="flex items-center space-x-2">
-                    <label className="text-sm font-medium text-gray-700">Change Category:</label>
+                  <div className="flex items-center space-x-2 bg-white rounded-lg px-3 py-2 border border-gray-200">
+                    <label className="text-sm font-medium text-gray-700 whitespace-nowrap">Category:</label>
                     <select
                       onChange={(e) => {
                         if (e.target.value) {
@@ -712,10 +725,10 @@ const AdminDashboard: React.FC = () => {
                           e.target.value = ''; // Reset selection
                         }
                       }}
-                      className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                      className="px-2 py-1 border-0 focus:ring-0 text-sm bg-transparent"
                       disabled={isProcessing}
                     >
-                      <option value="">Select Category</option>
+                      <option value="">Select...</option>
                       {categories.map(cat => (
                         <option key={cat.id} value={cat.id}>{cat.name}</option>
                       ))}
@@ -726,10 +739,10 @@ const AdminDashboard: React.FC = () => {
                   <button
                     onClick={handleBulkRemove}
                     disabled={isProcessing}
-                    className="flex items-center space-x-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                    className="flex items-center space-x-2 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium shadow-md hover:shadow-lg"
                   >
                     <Trash2 className="h-4 w-4" />
-                    <span>{isProcessing ? 'Removing...' : 'Remove Selected'}</span>
+                    <span>{isProcessing ? 'Removing...' : 'Remove'}</span>
                   </button>
                   
                   {/* Clear Selection */}
@@ -738,44 +751,46 @@ const AdminDashboard: React.FC = () => {
                       setSelectedItems([]);
                       setShowBulkActions(false);
                     }}
-                    className="flex items-center space-x-2 bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors duration-200 text-sm"
+                    className="flex items-center space-x-2 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-all duration-200 text-sm font-medium shadow-md hover:shadow-lg"
                   >
                     <X className="h-4 w-4" />
-                    <span>Clear Selection</span>
+                    <span>Clear</span>
                   </button>
                 </div>
               </div>
             </div>
           )}
 
-          <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
             {/* Bulk Actions Bar */}
             {menuItems.length > 0 && (
-              <div className="bg-gray-50 border-b border-gray-200 px-6 py-3">
+              <div className="bg-gradient-to-r from-red-50 to-orange-50 border-b border-gray-200 px-6 py-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
-                    <label className="flex items-center space-x-2">
+                    <label className="flex items-center space-x-3 cursor-pointer group">
                       <input
                         type="checkbox"
                         checked={selectedItems.length === menuItems.length && menuItems.length > 0}
                         onChange={handleSelectAll}
-                        className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                        className="rounded border-gray-300 text-red-600 focus:ring-red-500 w-4 h-4"
                       />
-                      <span className="text-sm font-medium text-gray-700">
+                      <span className="text-sm font-semibold text-gray-700 group-hover:text-gray-900">
                         Select All ({menuItems.length} items)
                       </span>
                     </label>
                   </div>
                   {selectedItems.length > 0 && (
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm text-gray-600">
-                        {selectedItems.length} item(s) selected
-                      </span>
+                    <div className="flex items-center space-x-3">
+                      <div className="px-3 py-1.5 bg-orange-100 rounded-full">
+                        <span className="text-sm font-medium text-orange-700">
+                          {selectedItems.length} selected
+                        </span>
+                      </div>
                       <button
                         onClick={() => setSelectedItems([])}
-                        className="text-sm text-gray-500 hover:text-gray-700 transition-colors duration-200"
+                        className="text-sm text-gray-500 hover:text-gray-700 transition-colors duration-200 font-medium"
                       >
-                        Clear Selection
+                        Clear
                       </button>
                     </div>
                   )}
@@ -786,23 +801,23 @@ const AdminDashboard: React.FC = () => {
             {/* Desktop Table View */}
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-50">
+                <thead className="bg-gradient-to-r from-red-50 to-orange-50">
                   <tr>
-                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-900">
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                       Select
                     </th>
-                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-900">Name</th>
-                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-900">Category</th>
-                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-900">Price</th>
-                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-900">Variations</th>
-                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-900">Add-ons</th>
-                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-900">Status</th>
-                    <th className="px-6 py-4 text-left text-sm font-medium text-gray-900">Actions</th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Name</th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Category</th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Price</th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Variations</th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Add-ons</th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
+                <tbody className="divide-y divide-gray-100">
                   {menuItems.map((item) => (
-                    <tr key={item.id} className="hover:bg-gray-50">
+                    <tr key={item.id} className="hover:bg-gradient-to-r hover:from-red-50 hover:to-orange-50 transition-all duration-200">
                       <td className="px-6 py-4">
                         <input
                           type="checkbox"
@@ -841,8 +856,8 @@ const AdminDashboard: React.FC = () => {
                       <td className="px-6 py-4">
                         <div className="flex flex-col space-y-1">
                           {item.popular && (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-600 text-white">
-                              Popular
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-sm">
+                              ⭐ Popular
                             </span>
                           )}
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
@@ -881,29 +896,29 @@ const AdminDashboard: React.FC = () => {
             {/* Mobile Card View */}
             <div className="md:hidden">
               {menuItems.map((item) => (
-                <div key={item.id} className={`p-4 border-b border-gray-200 last:border-b-0 ${selectedItems.includes(item.id) ? 'bg-blue-50' : ''}`}>
+                <div key={item.id} className={`p-4 border-b border-gray-200 last:border-b-0 transition-all duration-200 ${selectedItems.includes(item.id) ? 'bg-gradient-to-r from-orange-50 to-amber-50 border-l-4 border-orange-500' : 'hover:bg-gray-50'}`}>
                   <div className="flex items-center justify-between mb-3">
-                    <label className="flex items-center space-x-2">
+                    <label className="flex items-center space-x-2 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={selectedItems.includes(item.id)}
                         onChange={() => handleSelectItem(item.id)}
-                        className="rounded border-gray-300 text-green-600 focus:ring-green-500"
+                        className="rounded border-gray-300 text-red-600 focus:ring-red-500 w-4 h-4"
                       />
-                      <span className="text-sm text-gray-600">Select</span>
+                      <span className="text-sm text-gray-600 font-medium">Select</span>
                     </label>
                     <div className="flex items-center space-x-2">
                       <button
                         onClick={() => handleEditItem(item)}
                         disabled={isProcessing}
-                        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors duration-200"
+                        className="p-2 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-all duration-200"
                       >
                         <Edit className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => handleDeleteItem(item.id)}
                         disabled={isProcessing}
-                        className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors duration-200"
+                        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
@@ -912,56 +927,54 @@ const AdminDashboard: React.FC = () => {
                   
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1 min-w-0">
-                      <h3 className="font-medium text-gray-900 truncate">{item.name}</h3>
+                      <h3 className="font-semibold text-gray-900 truncate">{item.name}</h3>
                       <p className="text-sm text-gray-500 mt-1 line-clamp-2">{item.description}</p>
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="text-gray-500">Category:</span>
-                      <span className="ml-1 text-gray-900">
+                  <div className="grid grid-cols-2 gap-3 text-sm mb-3">
+                    <div className="bg-gray-50 rounded-lg p-2">
+                      <span className="text-gray-500 text-xs">Category</span>
+                      <p className="text-gray-900 font-medium mt-0.5">
                         {categories.find(cat => cat.id === item.category)?.name}
-                      </span>
+                      </p>
                     </div>
-                    <div>
-                      <span className="text-gray-500">Price:</span>
-                      <span className="ml-1 font-medium text-gray-900">
+                    <div className="bg-gray-50 rounded-lg p-2">
+                      <span className="text-gray-500 text-xs">Price</span>
+                      <p className="font-medium mt-0.5">
                         {item.isOnDiscount && item.discountPrice ? (
                           <span className="text-red-600">₱{item.discountPrice}</span>
                         ) : (
                           `₱${item.basePrice}`
                         )}
                         {item.isOnDiscount && item.discountPrice && (
-                          <span className="text-gray-500 line-through text-xs ml-1">₱{item.basePrice}</span>
+                          <span className="text-gray-400 line-through text-xs ml-1">₱{item.basePrice}</span>
                         )}
-                      </span>
+                      </p>
                     </div>
-                    <div>
-                      <span className="text-gray-500">Variations:</span>
-                      <span className="ml-1 text-gray-900">{item.variations?.length || 0}</span>
+                    <div className="bg-gray-50 rounded-lg p-2">
+                      <span className="text-gray-500 text-xs">Variations</span>
+                      <p className="text-gray-900 font-medium mt-0.5">{item.variations?.length || 0}</p>
                     </div>
-                    <div>
-                      <span className="text-gray-500">Add-ons:</span>
-                      <span className="ml-1 text-gray-900">{item.addOns?.length || 0}</span>
+                    <div className="bg-gray-50 rounded-lg p-2">
+                      <span className="text-gray-500 text-xs">Add-ons</span>
+                      <p className="text-gray-900 font-medium mt-0.5">{item.addOns?.length || 0}</p>
                     </div>
                   </div>
                   
-                  <div className="flex items-center justify-between mt-3">
-                    <div className="flex items-center space-x-2">
-                      {item.popular && (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-600 text-white">
-                          Popular
-                        </span>
-                      )}
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        item.available 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {item.available ? 'Available' : 'Unavailable'}
+                  <div className="flex items-center flex-wrap gap-2">
+                    {item.popular && (
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-yellow-500 to-orange-500 text-white shadow-sm">
+                        ⭐ Popular
                       </span>
-                    </div>
+                    )}
+                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold shadow-sm ${
+                      item.available 
+                        ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white' 
+                        : 'bg-gradient-to-r from-red-500 to-red-600 text-white'
+                    }`}>
+                      {item.available ? '✓ Available' : '✗ Unavailable'}
+                    </span>
                   </div>
                 </div>
               ))}
@@ -1022,6 +1035,16 @@ const AdminDashboard: React.FC = () => {
         onBack={() => setCurrentView('dashboard')}
         onUpdateItem={updateMenuItem}
         loading={loading}
+      />
+    );
+  }
+
+  if (currentView === 'reorder') {
+    return (
+      <MenuItemReorder
+        items={menuItems}
+        onBack={() => setCurrentView('dashboard')}
+        onSave={reorderMenuItems}
       />
     );
   }
@@ -1177,171 +1200,255 @@ const AdminDashboard: React.FC = () => {
 
   // Dashboard View
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow-sm border-b">
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-red-50">
+      {/* Modern Header with brand colors */}
+      <div className="bg-gradient-to-r from-red-600 to-red-700 shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-4">
-              <Coffee className="h-8 w-8 text-black" />
-              <h1 className="text-2xl font-noto font-semibold text-black">Raffa's Admin</h1>
+          <div className="flex items-center justify-between h-20">
+            <div className="flex items-center space-x-3">
+              <div className="bg-white/20 backdrop-blur-sm p-2.5 rounded-xl">
+                <Coffee className="h-7 w-7 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-playfair font-bold text-white">Raffa's Admin</h1>
+                <p className="text-xs text-red-100">Management Dashboard</p>
+              </div>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-3">
               <a
                 href="/"
-                className="text-gray-600 hover:text-black transition-colors duration-200"
+                className="hidden sm:flex items-center space-x-2 px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white rounded-lg transition-all duration-200 text-sm font-medium"
               >
-                View Website
+                <span>View Website</span>
               </a>
-              <div className="flex items-center space-x-2 text-sm text-gray-600">
-                <span>Welcome, {user?.email}</span>
+              <div className="hidden md:flex items-center space-x-2 px-3 py-2 bg-white/10 backdrop-blur-sm rounded-lg">
+                <div className="w-2 h-2 bg-yellow-300 rounded-full animate-pulse"></div>
+                <span className="text-sm text-white font-medium">{user?.email?.split('@')[0]}</span>
               </div>
               <button
                 onClick={handleLogout}
-                className="flex items-center space-x-2 text-gray-600 hover:text-red-600 transition-colors duration-200"
+                className="flex items-center space-x-2 px-4 py-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white rounded-lg transition-all duration-200"
               >
                 <LogOut className="h-4 w-4" />
-                <span>Logout</span>
+                <span className="hidden sm:inline">Logout</span>
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <div className="flex items-center">
-              <div className="p-2 bg-green-600 rounded-lg">
-                <Package className="h-6 w-6 text-white" />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Stats Cards with brand colors */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
+          <div className="group bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-100">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-gradient-to-br from-red-600 to-red-700 rounded-xl shadow-lg shadow-red-500/30">
+                  <Package className="h-6 w-6 text-white" />
+                </div>
+                <div className="px-2.5 py-1 bg-red-50 rounded-full">
+                  <span className="text-xs font-semibold text-red-600">Total</span>
+                </div>
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Items</p>
-                <p className="text-2xl font-semibold text-gray-900">{totalItems}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <div className="flex items-center">
-              <div className="p-2 bg-green-500 rounded-lg">
-                <TrendingUp className="h-6 w-6 text-white" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Available Items</p>
-                <p className="text-2xl font-semibold text-gray-900">{availableItems}</p>
+              <div>
+                <p className="text-sm font-medium text-gray-500 mb-1">Total Items</p>
+                <p className="text-3xl font-bold text-gray-900">{totalItems}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <div className="flex items-center">
-              <div className="p-2 bg-cream-500 rounded-lg">
-                <Coffee className="h-6 w-6 text-white" />
+          <div className="group bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-100">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-gradient-to-br from-amber-500 to-yellow-600 rounded-xl shadow-lg shadow-yellow-500/30">
+                  <TrendingUp className="h-6 w-6 text-white" />
+                </div>
+                <div className="px-2.5 py-1 bg-yellow-50 rounded-full">
+                  <span className="text-xs font-semibold text-yellow-600">Active</span>
+                </div>
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Popular Items</p>
-                <p className="text-2xl font-semibold text-gray-900">{popularItems}</p>
+              <div>
+                <p className="text-sm font-medium text-gray-500 mb-1">Available Items</p>
+                <p className="text-3xl font-bold text-gray-900">{availableItems}</p>
               </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <div className="flex items-center">
-              <div className="p-2 bg-green-500 rounded-lg">
-                <Users className="h-6 w-6 text-white" />
+          <div className="group bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-100">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-lg shadow-orange-500/30">
+                  <Coffee className="h-6 w-6 text-white" />
+                </div>
+                <div className="px-2.5 py-1 bg-orange-50 rounded-full">
+                  <span className="text-xs font-semibold text-orange-600">Featured</span>
+                </div>
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Active</p>
-                <p className="text-2xl font-semibold text-gray-900">Online</p>
+              <div>
+                <p className="text-sm font-medium text-gray-500 mb-1">Popular Items</p>
+                <p className="text-3xl font-bold text-gray-900">{popularItems}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="group bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-100">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-gradient-to-br from-amber-700 to-orange-800 rounded-xl shadow-lg shadow-orange-700/30">
+                  <Users className="h-6 w-6 text-white" />
+                </div>
+                <div className="px-2.5 py-1 bg-orange-50 rounded-full">
+                  <span className="text-xs font-semibold text-orange-700">Live</span>
+                </div>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-500 mb-1">Status</p>
+                <p className="text-3xl font-bold text-gray-900">Online</p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <h3 className="text-lg font-playfair font-medium text-black mb-4">Quick Actions</h3>
-            <div className="space-y-3">
-              <button
-                onClick={handleAddItem}
-                className="w-full flex items-center space-x-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-colors duration-200"
-              >
-                <Plus className="h-5 w-5 text-gray-400" />
-                <span className="font-medium text-gray-900">Add New Menu Item</span>
-              </button>
-              <button
-                onClick={() => setCurrentView('items')}
-                className="w-full flex items-center space-x-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-colors duration-200"
-              >
-                <Package className="h-5 w-5 text-gray-400" />
-                <span className="font-medium text-gray-900">Manage Menu Items</span>
-              </button>
-              <button
-                onClick={() => setCurrentView('inventory')}
-                className="w-full flex items-center space-x-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-colors duration-200"
-              >
-                <Boxes className="h-5 w-5 text-gray-400" />
-                <span className="font-medium text-gray-900">Inventory Management</span>
-              </button>
-              <button
-                onClick={() => setCurrentView('categories')}
-                className="w-full flex items-center space-x-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-colors duration-200"
-              >
-                <FolderOpen className="h-5 w-5 text-gray-400" />
-                <span className="font-medium text-gray-900">Manage Categories</span>
-              </button>
-              <button
-                onClick={() => setCurrentView('payments')}
-                className="w-full flex items-center space-x-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-colors duration-200"
-              >
-                <CreditCard className="h-5 w-5 text-gray-400" />
-                <span className="font-medium text-gray-900">Payment Methods</span>
-              </button>
-              <button
-                onClick={() => setCurrentView('orders')}
-                className="w-full flex items-center space-x-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-colors duration-200"
-              >
-                <ShoppingCart className="h-5 w-5 text-gray-400" />
-                <span className="font-medium text-gray-900">Manage Orders</span>
-              </button>
-              <button
-                onClick={() => setCurrentView('customers')}
-                className="w-full flex items-center space-x-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-colors duration-200"
-              >
-                <Users className="h-5 w-5 text-gray-400" />
-                <span className="font-medium text-gray-900">Customer Database</span>
-              </button>
-              <button
-                onClick={() => setCurrentView('settings')}
-                className="w-full flex items-center space-x-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-colors duration-200"
-              >
-                <Settings className="h-5 w-5 text-gray-400" />
-                <span className="font-medium text-gray-900">Site Settings</span>
-              </button>
-              <button
-                onClick={() => setCurrentView('account')}
-                className="w-full flex items-center space-x-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-colors duration-200"
-              >
-                <Users className="h-5 w-5 text-gray-400" />
-                <span className="font-medium text-gray-900">Account Settings</span>
-              </button>
+        {/* Quick Actions Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          {/* Quick Actions */}
+          <div className="lg:col-span-2">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="bg-gradient-to-r from-red-50 to-orange-50 px-6 py-4 border-b border-gray-100">
+                <h3 className="text-lg font-playfair font-semibold text-gray-900 flex items-center">
+                  <div className="w-1 h-6 bg-red-600 rounded-full mr-3"></div>
+                  Quick Actions
+                </h3>
+              </div>
+              <div className="p-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button
+                    onClick={handleAddItem}
+                    className="group flex items-center space-x-3 p-4 text-left bg-gradient-to-br from-red-50 to-orange-50 hover:from-red-100 hover:to-orange-100 rounded-xl transition-all duration-200 border border-red-100 hover:border-red-200 hover:shadow-md"
+                  >
+                    <div className="p-2 bg-red-600 rounded-lg group-hover:scale-110 transition-transform">
+                      <Plus className="h-5 w-5 text-white" />
+                    </div>
+                    <span className="font-medium text-gray-900">Add Menu Item</span>
+                  </button>
+                  <button
+                    onClick={() => setCurrentView('items')}
+                    className="group flex items-center space-x-3 p-4 text-left bg-gradient-to-br from-yellow-50 to-amber-50 hover:from-yellow-100 hover:to-amber-100 rounded-xl transition-all duration-200 border border-yellow-100 hover:border-yellow-200 hover:shadow-md"
+                  >
+                    <div className="p-2 bg-yellow-500 rounded-lg group-hover:scale-110 transition-transform">
+                      <Package className="h-5 w-5 text-white" />
+                    </div>
+                    <span className="font-medium text-gray-900">Manage Items</span>
+                  </button>
+                  <button
+                    onClick={() => setCurrentView('reorder')}
+                    className="group flex items-center space-x-3 p-4 text-left bg-gradient-to-br from-orange-50 to-red-50 hover:from-orange-100 hover:to-red-100 rounded-xl transition-all duration-200 border border-orange-100 hover:border-orange-200 hover:shadow-md"
+                  >
+                    <div className="p-2 bg-orange-500 rounded-lg group-hover:scale-110 transition-transform">
+                      <ArrowUpDown className="h-5 w-5 text-white" />
+                    </div>
+                    <span className="font-medium text-gray-900">Reorder Items</span>
+                  </button>
+                  <button
+                    onClick={() => setCurrentView('inventory')}
+                    className="group flex items-center space-x-3 p-4 text-left bg-gradient-to-br from-amber-50 to-orange-50 hover:from-amber-100 hover:to-orange-100 rounded-xl transition-all duration-200 border border-amber-100 hover:border-amber-200 hover:shadow-md"
+                  >
+                    <div className="p-2 bg-amber-600 rounded-lg group-hover:scale-110 transition-transform">
+                      <Boxes className="h-5 w-5 text-white" />
+                    </div>
+                    <span className="font-medium text-gray-900">Inventory</span>
+                  </button>
+                  <button
+                    onClick={() => setCurrentView('categories')}
+                    className="group flex items-center space-x-3 p-4 text-left bg-gradient-to-br from-orange-50 to-amber-50 hover:from-orange-100 hover:to-amber-100 rounded-xl transition-all duration-200 border border-orange-100 hover:border-orange-200 hover:shadow-md"
+                  >
+                    <div className="p-2 bg-orange-600 rounded-lg group-hover:scale-110 transition-transform">
+                      <FolderOpen className="h-5 w-5 text-white" />
+                    </div>
+                    <span className="font-medium text-gray-900">Categories</span>
+                  </button>
+                  <button
+                    onClick={() => setCurrentView('orders')}
+                    className="group flex items-center space-x-3 p-4 text-left bg-gradient-to-br from-red-50 to-pink-50 hover:from-red-100 hover:to-pink-100 rounded-xl transition-all duration-200 border border-red-100 hover:border-red-200 hover:shadow-md"
+                  >
+                    <div className="p-2 bg-red-600 rounded-lg group-hover:scale-110 transition-transform">
+                      <ShoppingCart className="h-5 w-5 text-white" />
+                    </div>
+                    <span className="font-medium text-gray-900">Orders</span>
+                  </button>
+                  <button
+                    onClick={() => setCurrentView('payments')}
+                    className="group flex items-center space-x-3 p-4 text-left bg-gradient-to-br from-yellow-50 to-orange-50 hover:from-yellow-100 hover:to-orange-100 rounded-xl transition-all duration-200 border border-yellow-100 hover:border-yellow-200 hover:shadow-md"
+                  >
+                    <div className="p-2 bg-yellow-600 rounded-lg group-hover:scale-110 transition-transform">
+                      <CreditCard className="h-5 w-5 text-white" />
+                    </div>
+                    <span className="font-medium text-gray-900">Payments</span>
+                  </button>
+                  <button
+                    onClick={() => setCurrentView('customers')}
+                    className="group flex items-center space-x-3 p-4 text-left bg-gradient-to-br from-orange-50 to-red-50 hover:from-orange-100 hover:to-red-100 rounded-xl transition-all duration-200 border border-orange-100 hover:border-orange-200 hover:shadow-md"
+                  >
+                    <div className="p-2 bg-orange-600 rounded-lg group-hover:scale-110 transition-transform">
+                      <Users className="h-5 w-5 text-white" />
+                    </div>
+                    <span className="font-medium text-gray-900">Customers</span>
+                  </button>
+                  <button
+                    onClick={() => setCurrentView('settings')}
+                    className="group flex items-center space-x-3 p-4 text-left bg-gradient-to-br from-amber-50 to-orange-50 hover:from-amber-100 hover:to-orange-100 rounded-xl transition-all duration-200 border border-amber-100 hover:border-amber-200 hover:shadow-md"
+                  >
+                    <div className="p-2 bg-amber-700 rounded-lg group-hover:scale-110 transition-transform">
+                      <Settings className="h-5 w-5 text-white" />
+                    </div>
+                    <span className="font-medium text-gray-900">Settings</span>
+                  </button>
+                  <button
+                    onClick={() => setCurrentView('account')}
+                    className="group flex items-center space-x-3 p-4 text-left bg-gradient-to-br from-orange-50 to-amber-50 hover:from-orange-100 hover:to-amber-100 rounded-xl transition-all duration-200 border border-orange-100 hover:border-orange-200 hover:shadow-md"
+                  >
+                    <div className="p-2 bg-orange-700 rounded-lg group-hover:scale-110 transition-transform">
+                      <Users className="h-5 w-5 text-white" />
+                    </div>
+                    <span className="font-medium text-gray-900">Account</span>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            <h3 className="text-lg font-playfair font-medium text-black mb-4">Categories Overview</h3>
-            <div className="space-y-3">
-              {categoryCounts.map((category) => (
-                <div key={category.id} className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-lg">{category.icon}</span>
-                    <span className="font-medium text-gray-900">{category.name}</span>
-                  </div>
-                  <span className="text-sm text-gray-500">{category.count} items</span>
+          {/* Categories Overview */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="bg-gradient-to-r from-orange-50 to-amber-50 px-6 py-4 border-b border-gray-100">
+              <h3 className="text-lg font-playfair font-semibold text-gray-900 flex items-center">
+                <div className="w-1 h-6 bg-orange-600 rounded-full mr-3"></div>
+                Categories
+              </h3>
+            </div>
+            <div className="p-6">
+              {categoryCounts.length === 0 ? (
+                <div className="text-center py-8">
+                  <FolderOpen className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-sm text-gray-500">No categories yet</p>
                 </div>
-              ))}
+              ) : (
+                <div className="space-y-3">
+                  {categoryCounts.map((category) => (
+                    <div key={category.id} className="group flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 rounded-xl transition-all duration-200 cursor-pointer" onClick={() => setCurrentView('categories')}>
+                      <div className="flex items-center space-x-3">
+                        <div className="text-2xl group-hover:scale-110 transition-transform">{category.icon}</div>
+                        <div>
+                          <p className="font-medium text-gray-900">{category.name}</p>
+                          <p className="text-xs text-gray-500">{category.count} {category.count === 1 ? 'item' : 'items'}</p>
+                        </div>
+                      </div>
+                      <div className="px-2.5 py-1 bg-white rounded-full border border-gray-200">
+                        <span className="text-xs font-semibold text-gray-600">{category.count}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>

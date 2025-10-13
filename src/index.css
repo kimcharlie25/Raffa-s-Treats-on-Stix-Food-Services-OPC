@@ -107,6 +107,12 @@ img {
 }
 
 /* On-screen preview for receipt */
+.receipt {
+  /* Provide dimensions on screen so html-to-image can measure */
+  width: 320px; /* approx 80mm at 96dpi */
+  background: #fff;
+  padding: 8px 10px;
+}
 .receipt-preview {
   width: 320px; /* approx 80mm at 96dpi */
   background: #fff;

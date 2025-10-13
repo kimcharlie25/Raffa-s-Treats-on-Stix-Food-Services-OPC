@@ -1,8 +1,9 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { ArrowLeft, CheckCircle, Clock, XCircle, RefreshCw, ChevronDown, Search, Image as ImageIcon, Download, Calendar, Printer } from 'lucide-react';
 // import { Link } from 'react-router-dom';
 import { useOrders, OrderWithItems } from '../hooks/useOrders';
 import { supabase } from '../lib/supabase';
+import * as htmlToImage from 'html-to-image';
 
 interface OrdersManagerProps {
   onBack: () => void;
@@ -28,6 +29,9 @@ const OrdersManager: React.FC<OrdersManagerProps> = ({ onBack }) => {
   });
   const [printQueue, setPrintQueue] = useState<string[]>([]);
   const [processingPrint, setProcessingPrint] = useState<boolean>(false);
+  const receiptPrintRef = useRef<HTMLDivElement | null>(null);
+  const receiptCaptureRef = useRef<HTMLDivElement | null>(null);
+  const [captureOrder, setCaptureOrder] = useState<OrderWithItems | null>(null);
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
@@ -67,9 +71,14 @@ const OrdersManager: React.FC<OrdersManagerProps> = ({ onBack }) => {
     }
   };
 
-  const ReceiptInline: React.FC<{ order: OrderWithItems }> = ({ order }) => {
+  type ReceiptInlineProps = { order: OrderWithItems; innerRef?: React.Ref<HTMLDivElement>; variant?: 'print' | 'capture' };
+  const ReceiptInline: React.FC<ReceiptInlineProps> = ({ order, innerRef, variant = 'print' }) => {
     return (
-      <div className="receipt print-only">
+      <div
+        className={`receipt ${variant === 'print' ? 'print-only' : ''}`}
+        ref={innerRef as any}
+        style={variant === 'capture' ? { position: 'absolute', left: 0, top: 0, zIndex: -1 } : undefined}
+      >
         <div className="text-center">
           <div className="font-bold text-base">Raffa's Treats on Stix</div>
           <div>Orders Receipt</div>
@@ -115,6 +124,33 @@ const OrdersManager: React.FC<OrdersManagerProps> = ({ onBack }) => {
         <div className="text-center">Thank you!</div>
       </div>
     );
+  };
+
+  const downloadReceiptPng = async (order: OrderWithItems) => {
+    // Render an off-screen visible receipt clone for capture
+    setCaptureOrder(order);
+    await new Promise((r) => setTimeout(r, 120));
+    const node = receiptCaptureRef.current;
+    if (!node) return;
+    try {
+      const dataUrl = await htmlToImage.toPng(node, {
+        backgroundColor: '#ffffff',
+        pixelRatio: 2,
+        // Avoid reading remote @font-face from Google Fonts
+        skipFonts: true as any,
+        style: {
+          fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace',
+          color: '#000000',
+        } as any,
+      } as any);
+      const link = document.createElement('a');
+      link.download = `receipt_${order.id.slice(-8)}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (e) {
+      console.error('Failed to export receipt image', e);
+      alert('Failed to download receipt image.');
+    } finally { setCaptureOrder(null); }
   };
 
   // Persist auto-print setting
@@ -564,6 +600,14 @@ const OrdersManager: React.FC<OrdersManagerProps> = ({ onBack }) => {
                               <Printer className="h-4 w-4" />
                               Print
                             </button>
+                            <button
+                              onClick={() => downloadReceiptPng(order)}
+                              className="px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-100 text-gray-700 inline-flex items-center gap-1"
+                              title="Download receipt image"
+                            >
+                              <Download className="h-4 w-4" />
+                              PNG
+                            </button>
                             <select
                               value={order.status}
                               onChange={(e) => handleStatusUpdate(order.id, e.target.value)}
@@ -627,6 +671,14 @@ const OrdersManager: React.FC<OrdersManagerProps> = ({ onBack }) => {
                       >
                         <Printer className="h-4 w-4" />
                         Print
+                      </button>
+                      <button
+                        onClick={() => downloadReceiptPng(order)}
+                        className="px-3 py-2 border border-gray-300 rounded-lg text-sm inline-flex items-center justify-center gap-1"
+                        title="Download receipt image"
+                      >
+                        <Download className="h-4 w-4" />
+                        PNG
                       </button>
                       <select
                         value={order.status}
@@ -763,13 +815,21 @@ const OrdersManager: React.FC<OrdersManagerProps> = ({ onBack }) => {
                   <Printer className="h-4 w-4" />
                   Print Receipt
                 </button>
+                <button
+                  onClick={() => downloadReceiptPng(selectedOrder)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm inline-flex items-center gap-1"
+                >
+                  <Download className="h-4 w-4" />
+                  Download PNG
+                </button>
               </div>
             </div>
           </div>
         </div>
       )}
       {/* Inline printable receipt content (hidden on screen) */}
-      {printOrder && <ReceiptInline order={printOrder} />}
+      {printOrder && <ReceiptInline order={printOrder} innerRef={receiptPrintRef} variant="print" />}
+      {captureOrder && <ReceiptInline order={captureOrder} innerRef={receiptCaptureRef} variant="capture" />}
     </div>
   );
 };

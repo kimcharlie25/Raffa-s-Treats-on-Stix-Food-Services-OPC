@@ -19,7 +19,7 @@ export const useMenu = () => {
           variations (*),
           add_ons (*)
         `)
-        .order('created_at', { ascending: true });
+        .order('sort_order', { ascending: true, nullsFirst: false });
 
       if (itemsError) throw itemsError;
 
@@ -55,12 +55,13 @@ export const useMenu = () => {
           stockQuantity: item.stock_quantity,
           lowStockThreshold: item.low_stock_threshold ?? 0,
           autoDisabled: item.track_inventory ? item.available === false : false,
-          variations: item.variations?.map(v => ({
+          sortOrder: item.sort_order,
+          variations: item.variations?.map((v: any) => ({
             id: v.id,
             name: v.name,
             price: v.price
           })) || [],
-          addOns: item.add_ons?.map(a => ({
+          addOns: item.add_ons?.map((a: any) => ({
             id: a.id,
             name: a.name,
             price: a.price,
@@ -81,6 +82,17 @@ export const useMenu = () => {
 
   const addMenuItem = async (item: Omit<MenuItem, 'id'>) => {
     try {
+      // Get the max sort_order for this category to add new item at the end
+      const { data: maxSort } = await supabase
+        .from('menu_items')
+        .select('sort_order')
+        .eq('category', item.category)
+        .order('sort_order', { ascending: false })
+        .limit(1)
+        .single();
+
+      const nextSortOrder = maxSort?.sort_order ? maxSort.sort_order + 1 : 1;
+
       // Insert menu item
       const { data: menuItem, error: itemError } = await supabase
         .from('menu_items')
@@ -98,7 +110,8 @@ export const useMenu = () => {
           discount_active: item.discountActive || false,
           track_inventory: item.trackInventory || false,
           stock_quantity: item.stockQuantity ?? null,
-          low_stock_threshold: item.lowStockThreshold ?? 0
+          low_stock_threshold: item.lowStockThreshold ?? 0,
+          sort_order: nextSortOrder
         })
         .select()
         .single();
@@ -163,7 +176,8 @@ export const useMenu = () => {
           discount_active: updates.discountActive,
           track_inventory: updates.trackInventory,
           stock_quantity: updates.stockQuantity,
-          low_stock_threshold: updates.lowStockThreshold
+          low_stock_threshold: updates.lowStockThreshold,
+          sort_order: updates.sortOrder
         })
         .eq('id', id);
 
@@ -227,6 +241,27 @@ export const useMenu = () => {
     }
   };
 
+  const reorderMenuItems = async (_category: string, reorderedItems: MenuItem[]) => {
+    try {
+      const updates = reorderedItems.map((item, index) => ({
+        id: item.id,
+        sort_order: index + 1
+      }));
+
+      for (const update of updates) {
+        await supabase
+          .from('menu_items')
+          .update({ sort_order: update.sort_order })
+          .eq('id', update.id);
+      }
+
+      await fetchMenuItems();
+    } catch (err) {
+      console.error('Error reordering menu items:', err);
+      throw err;
+    }
+  };
+
   useEffect(() => {
     fetchMenuItems();
   }, []);
@@ -238,6 +273,7 @@ export const useMenu = () => {
     addMenuItem,
     updateMenuItem,
     deleteMenuItem,
+    reorderMenuItems,
     refetch: fetchMenuItems
   };
 };

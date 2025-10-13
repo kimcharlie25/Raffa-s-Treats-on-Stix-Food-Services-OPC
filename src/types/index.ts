@@ -36,6 +36,8 @@ export interface MenuItem {
   stockQuantity?: number | null;
   lowStockThreshold?: number;
   autoDisabled?: boolean;
+  // Sort order
+  sortOrder?: number;
 }
 
 export interface CartItem extends MenuItem {

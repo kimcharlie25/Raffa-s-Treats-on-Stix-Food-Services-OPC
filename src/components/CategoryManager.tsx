@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Plus, Edit, Trash2, Save, X, ArrowLeft, GripVertical } from 'lucide-react';
+import { Plus, Edit, Trash2, Save, X, ArrowLeft, GripVertical, ArrowUpDown } from 'lucide-react';
 import { useCategories, Category } from '../hooks/useCategories';
+import CategoryReorder from './CategoryReorder';
 
 interface CategoryManagerProps {
   onBack: () => void;
@@ -8,7 +9,7 @@ interface CategoryManagerProps {
 
 const CategoryManager: React.FC<CategoryManagerProps> = ({ onBack }) => {
   const { categories, addCategory, updateCategory, deleteCategory, reorderCategories } = useCategories();
-  const [currentView, setCurrentView] = useState<'list' | 'add' | 'edit'>('list');
+  const [currentView, setCurrentView] = useState<'list' | 'add' | 'edit' | 'reorder'>('list');
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [formData, setFormData] = useState({
     id: '',
@@ -82,6 +83,17 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ onBack }) => {
     setCurrentView('list');
     setEditingCategory(null);
   };
+
+  // Reorder View
+  if (currentView === 'reorder') {
+    return (
+      <CategoryReorder
+        categories={categories}
+        onBack={() => setCurrentView('list')}
+        onSave={reorderCategories}
+      />
+    );
+  }
 
   const generateIdFromName = (name: string) => {
     return name
@@ -238,13 +250,22 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ onBack }) => {
               </button>
               <h1 className="text-2xl font-playfair font-semibold text-black">Manage Categories</h1>
             </div>
-            <button
-              onClick={handleAddCategory}
-              className="flex items-center space-x-2 bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors duration-200"
-            >
-              <Plus className="h-4 w-4" />
-              <span>Add Category</span>
-            </button>
+            <div className="flex space-x-3">
+              <button
+                onClick={() => setCurrentView('reorder')}
+                className="flex items-center space-x-2 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors duration-200"
+              >
+                <ArrowUpDown className="h-4 w-4" />
+                <span>Reorder</span>
+              </button>
+              <button
+                onClick={handleAddCategory}
+                className="flex items-center space-x-2 bg-black text-white px-4 py-2 rounded-lg hover:bg-gray-800 transition-colors duration-200"
+              >
+                <Plus className="h-4 w-4" />
+                <span>Add Category</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
