@@ -5,6 +5,7 @@ import { addOnCategories } from '../data/menuData';
 import { useMenu } from '../hooks/useMenu';
 import { useCategories } from '../hooks/useCategories';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
 import ImageUpload from './ImageUpload';
 import CategoryManager from './CategoryManager';
 import PaymentMethodManager from './PaymentMethodManager';
@@ -17,11 +18,21 @@ const AdminDashboard: React.FC = () => {
   const { user, signOut } = useAuth();
   const { menuItems, loading, addMenuItem, updateMenuItem, deleteMenuItem } = useMenu();
   const { categories } = useCategories();
-  const [currentView, setCurrentView] = useState<'dashboard' | 'items' | 'add' | 'edit' | 'categories' | 'payments' | 'settings' | 'orders' | 'inventory' | 'customers'>('dashboard');
+  const [currentView, setCurrentView] = useState<'dashboard' | 'items' | 'add' | 'edit' | 'categories' | 'payments' | 'settings' | 'orders' | 'inventory' | 'customers' | 'account'>('dashboard');
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showBulkActions, setShowBulkActions] = useState(false);
+  
+  // Password change state
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState('');
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [formData, setFormData] = useState<Partial<MenuItem>>({
     name: '',
     description: '',
@@ -251,6 +262,60 @@ const AdminDashboard: React.FC = () => {
 
   const handleLogout = async () => {
     await signOut();
+  };
+
+  const handlePasswordChange = async () => {
+    setPasswordError('');
+    setPasswordSuccess('');
+
+    // Validation
+    if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
+      setPasswordError('Please fill in all fields');
+      return;
+    }
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setPasswordError('New passwords do not match');
+      return;
+    }
+
+    if (passwordData.newPassword.length < 6) {
+      setPasswordError('New password must be at least 6 characters long');
+      return;
+    }
+
+    if (passwordData.currentPassword === passwordData.newPassword) {
+      setPasswordError('New password must be different from current password');
+      return;
+    }
+
+    try {
+      setIsChangingPassword(true);
+
+      // Update password using Supabase
+      const { error } = await supabase.auth.updateUser({
+        password: passwordData.newPassword
+      });
+
+      if (error) {
+        setPasswordError(error.message);
+        return;
+      }
+
+      setPasswordSuccess('Password changed successfully!');
+      setPasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+
+      // Clear success message after 5 seconds
+      setTimeout(() => setPasswordSuccess(''), 5000);
+    } catch (error) {
+      setPasswordError('Failed to change password. Please try again.');
+    } finally {
+      setIsChangingPassword(false);
+    }
   };
 
 
@@ -966,6 +1031,150 @@ const AdminDashboard: React.FC = () => {
     return <CustomersManager onBack={() => setCurrentView('dashboard')} />;
   }
 
+  // Account Settings View
+  if (currentView === 'account') {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="bg-white shadow-sm border-b">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between h-16">
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => setCurrentView('dashboard')}
+                  className="flex items-center space-x-2 text-gray-600 hover:text-black transition-colors duration-200"
+                >
+                  <ArrowLeft className="h-5 w-5" />
+                  <span>Dashboard</span>
+                </button>
+                <h1 className="text-2xl font-playfair font-semibold text-black">Account Settings</h1>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-4xl mx-auto px-4 py-8">
+          <div className="bg-white rounded-xl shadow-sm p-8">
+            <h2 className="text-2xl font-playfair font-semibold text-black mb-6">Change Password</h2>
+            
+            <div className="space-y-6">
+              {/* Current Password */}
+              <div>
+                <label className="block text-sm font-medium text-black mb-2">
+                  Current Password
+                </label>
+                <input
+                  type="password"
+                  value={passwordData.currentPassword}
+                  onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                  placeholder="Enter your current password"
+                />
+              </div>
+
+              {/* New Password */}
+              <div>
+                <label className="block text-sm font-medium text-black mb-2">
+                  New Password
+                </label>
+                <input
+                  type="password"
+                  value={passwordData.newPassword}
+                  onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                  placeholder="Enter your new password"
+                />
+                <p className="text-sm text-gray-500 mt-1">Must be at least 6 characters long</p>
+              </div>
+
+              {/* Confirm New Password */}
+              <div>
+                <label className="block text-sm font-medium text-black mb-2">
+                  Confirm New Password
+                </label>
+                <input
+                  type="password"
+                  value={passwordData.confirmPassword}
+                  onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                  placeholder="Confirm your new password"
+                />
+              </div>
+
+              {/* Error Message */}
+              {passwordError && (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-red-600 text-sm">{passwordError}</p>
+                </div>
+              )}
+
+              {/* Success Message */}
+              {passwordSuccess && (
+                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <p className="text-green-600 text-sm">{passwordSuccess}</p>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-end space-x-4 pt-4">
+                <button
+                  onClick={() => {
+                    setCurrentView('dashboard');
+                    setPasswordData({
+                      currentPassword: '',
+                      newPassword: '',
+                      confirmPassword: ''
+                    });
+                    setPasswordError('');
+                    setPasswordSuccess('');
+                  }}
+                  className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handlePasswordChange}
+                  disabled={isChangingPassword}
+                  className="px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                >
+                  {isChangingPassword ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <span>Changing Password...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4" />
+                      <span>Change Password</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* User Info */}
+            <div className="mt-8 pt-8 border-t border-gray-200">
+              <h3 className="text-lg font-playfair font-medium text-black mb-4">Account Information</h3>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between py-2">
+                  <span className="text-sm font-medium text-gray-600">Email</span>
+                  <span className="text-sm text-black">{user?.email}</span>
+                </div>
+                <div className="flex items-center justify-between py-2">
+                  <span className="text-sm font-medium text-gray-600">User ID</span>
+                  <span className="text-sm text-black font-mono">{user?.id}</span>
+                </div>
+                <div className="flex items-center justify-between py-2">
+                  <span className="text-sm font-medium text-gray-600">Role</span>
+                  <span className="text-sm text-black">{user?.user_metadata?.role || 'Admin'}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Dashboard View
   return (
     <div className="min-h-screen bg-gray-50">
@@ -1110,6 +1319,13 @@ const AdminDashboard: React.FC = () => {
               >
                 <Settings className="h-5 w-5 text-gray-400" />
                 <span className="font-medium text-gray-900">Site Settings</span>
+              </button>
+              <button
+                onClick={() => setCurrentView('account')}
+                className="w-full flex items-center space-x-3 p-3 text-left hover:bg-gray-50 rounded-lg transition-colors duration-200"
+              >
+                <Users className="h-5 w-5 text-gray-400" />
+                <span className="font-medium text-gray-900">Account Settings</span>
               </button>
             </div>
           </div>
