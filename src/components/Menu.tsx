@@ -1,6 +1,7 @@
 import React from 'react';
 import { MenuItem, CartItem } from '../types';
 import { useCategories } from '../hooks/useCategories';
+import { useSiteSettings } from '../hooks/useSiteSettings';
 import MenuItemCard from './MenuItemCard';
 import MobileNav from './MobileNav';
 
@@ -23,6 +24,7 @@ interface MenuProps {
 
 const Menu: React.FC<MenuProps> = ({ menuItems, addToCart, cartItems, updateQuantity }) => {
   const { categories } = useCategories();
+  const { siteSettings } = useSiteSettings();
   const [activeCategory, setActiveCategory] = React.useState('hot-coffee');
 
   // Preload images when menu items change
@@ -95,8 +97,7 @@ const Menu: React.FC<MenuProps> = ({ menuItems, addToCart, cartItems, updateQuan
       <div className="text-center mb-12">
         <h2 className="text-5xl font-lilita text-[color:var(--raffa-dark)] mb-2">Menu</h2>
         <p className="text-[color:var(--raffa-dark)]/80 max-w-2xl mx-auto">
-          Discover our selection of authentic dim sum, flavorful noodles, and traditional Asian dishes, 
-          all prepared with fresh ingredients and authentic techniques.
+          {siteSettings?.site_description || 'Discover our selection of authentic dim sum, flavorful noodles, and traditional Asian dishes, all prepared with fresh ingredients and authentic techniques.'}
         </p>
       </div>
 
