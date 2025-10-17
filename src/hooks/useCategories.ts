@@ -16,15 +16,20 @@ export const useCategories = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchCategories = async () => {
+  const fetchCategories = async (includeInactive = false) => {
     try {
       setLoading(true);
       
-      const { data, error: fetchError } = await supabase
+      let query = supabase
         .from('categories')
-        .select('*')
-        .eq('active', true)
-        .order('sort_order', { ascending: true });
+        .select('*');
+      
+      // Only filter by active status if includeInactive is false
+      if (!includeInactive) {
+        query = query.eq('active', true);
+      }
+      
+      const { data, error: fetchError } = await query.order('sort_order', { ascending: true });
 
       if (fetchError) throw fetchError;
 
@@ -83,21 +88,38 @@ export const useCategories = () => {
     }
   };
 
-  const deleteCategory = async (id: string) => {
+  const deleteCategory = async (id: string, moveToCategory?: string) => {
     try {
       // Check if category has menu items
       const { data: menuItems, error: checkError } = await supabase
         .from('menu_items')
         .select('id')
-        .eq('category', id)
-        .limit(1);
+        .eq('category', id);
 
       if (checkError) throw checkError;
 
+      // If category has items, handle them based on the action
       if (menuItems && menuItems.length > 0) {
-        throw new Error('Cannot delete category that contains menu items. Please move or delete the items first.');
+        if (moveToCategory) {
+          // Move all items to the specified category
+          const { error: moveError } = await supabase
+            .from('menu_items')
+            .update({ category: moveToCategory })
+            .eq('category', id);
+
+          if (moveError) throw moveError;
+        } else {
+          // Delete all menu items in this category
+          const { error: deleteItemsError } = await supabase
+            .from('menu_items')
+            .delete()
+            .eq('category', id);
+
+          if (deleteItemsError) throw deleteItemsError;
+        }
       }
 
+      // Now delete the category
       const { error: deleteError } = await supabase
         .from('categories')
         .delete()

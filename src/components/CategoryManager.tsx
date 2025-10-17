@@ -1,14 +1,15 @@
-import React, { useState } from 'react';
-import { Plus, Edit, Trash2, Save, X, ArrowLeft, GripVertical, ArrowUpDown } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Plus, Edit, Trash2, Save, X, ArrowLeft, GripVertical, ArrowUpDown, AlertTriangle } from 'lucide-react';
 import { useCategories, Category } from '../hooks/useCategories';
 import CategoryReorder from './CategoryReorder';
+import { supabase } from '../lib/supabase';
 
 interface CategoryManagerProps {
   onBack: () => void;
 }
 
 const CategoryManager: React.FC<CategoryManagerProps> = ({ onBack }) => {
-  const { categories, addCategory, updateCategory, deleteCategory, reorderCategories } = useCategories();
+  const { categories, addCategory, updateCategory, deleteCategory, reorderCategories, refetch } = useCategories();
   const [currentView, setCurrentView] = useState<'list' | 'add' | 'edit' | 'reorder'>('list');
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [formData, setFormData] = useState({
@@ -18,6 +19,19 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ onBack }) => {
     sort_order: 0,
     active: true
   });
+
+  // Delete confirmation dialog state
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
+  const [itemCount, setItemCount] = useState(0);
+  const [deleteAction, setDeleteAction] = useState<'delete' | 'move'>('delete');
+  const [moveToCategory, setMoveToCategory] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Fetch all categories (including inactive) for admin view
+  useEffect(() => {
+    refetch(true); // true = include inactive categories
+  }, []);
 
   const handleAddCategory = () => {
     const nextSortOrder = Math.max(...categories.map(c => c.sort_order), 0) + 1;
@@ -43,14 +57,56 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ onBack }) => {
     setCurrentView('edit');
   };
 
-  const handleDeleteCategory = async (id: string) => {
-    if (confirm('Are you sure you want to delete this category? This action cannot be undone.')) {
-      try {
-        await deleteCategory(id);
-      } catch (error) {
-        alert(error instanceof Error ? error.message : 'Failed to delete category');
-      }
+  const handleDeleteCategory = async (category: Category) => {
+    // Check how many items are in this category
+    const { data: menuItems } = await supabase
+      .from('menu_items')
+      .select('id')
+      .eq('category', category.id);
+    
+    const count = menuItems?.length || 0;
+    setItemCount(count);
+    setCategoryToDelete(category);
+    
+    // Set default move-to category to the first available category (excluding the one being deleted)
+    const otherCategories = categories.filter(c => c.id !== category.id);
+    if (otherCategories.length > 0) {
+      setMoveToCategory(otherCategories[0].id);
     }
+    
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDeleteCategory = async () => {
+    if (!categoryToDelete) return;
+
+    try {
+      setIsDeleting(true);
+      
+      if (deleteAction === 'move' && itemCount > 0) {
+        await deleteCategory(categoryToDelete.id, moveToCategory);
+      } else {
+        await deleteCategory(categoryToDelete.id);
+      }
+      
+      setShowDeleteDialog(false);
+      setCategoryToDelete(null);
+      setItemCount(0);
+      setDeleteAction('delete');
+      setMoveToCategory('');
+    } catch (error) {
+      alert(error instanceof Error ? error.message : 'Failed to delete category');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteDialog(false);
+    setCategoryToDelete(null);
+    setItemCount(0);
+    setDeleteAction('delete');
+    setMoveToCategory('');
   };
 
   const handleSaveCategory = async () => {
@@ -321,7 +377,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ onBack }) => {
                       </button>
                       
                       <button
-                        onClick={() => handleDeleteCategory(category.id)}
+                        onClick={() => handleDeleteCategory(category)}
                         className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors duration-200"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -334,6 +390,105 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ onBack }) => {
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      {showDeleteDialog && categoryToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full mx-4 p-6">
+            <div className="flex items-start space-x-3 mb-4">
+              <div className="flex-shrink-0">
+                <AlertTriangle className="h-6 w-6 text-red-600" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  Delete Category: {categoryToDelete.name}
+                </h3>
+                
+                {itemCount > 0 ? (
+                  <div className="space-y-4">
+                    <p className="text-sm text-gray-600">
+                      This category contains <strong>{itemCount}</strong> menu item{itemCount !== 1 ? 's' : ''}. 
+                      What would you like to do with {itemCount !== 1 ? 'them' : 'it'}?
+                    </p>
+
+                    <div className="space-y-3">
+                      <label className="flex items-start space-x-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                        <input
+                          type="radio"
+                          name="deleteAction"
+                          value="delete"
+                          checked={deleteAction === 'delete'}
+                          onChange={(e) => setDeleteAction(e.target.value as 'delete' | 'move')}
+                          className="mt-1"
+                        />
+                        <div className="flex-1">
+                          <div className="font-medium text-gray-900">Delete all items</div>
+                          <div className="text-sm text-gray-500">
+                            Permanently delete the category and all {itemCount} menu item{itemCount !== 1 ? 's' : ''} in it
+                          </div>
+                        </div>
+                      </label>
+
+                      <label className="flex items-start space-x-3 p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                        <input
+                          type="radio"
+                          name="deleteAction"
+                          value="move"
+                          checked={deleteAction === 'move'}
+                          onChange={(e) => setDeleteAction(e.target.value as 'delete' | 'move')}
+                          className="mt-1"
+                        />
+                        <div className="flex-1">
+                          <div className="font-medium text-gray-900">Move items to another category</div>
+                          <div className="text-sm text-gray-500 mb-2">
+                            Move all items to a different category before deleting
+                          </div>
+                          {deleteAction === 'move' && (
+                            <select
+                              value={moveToCategory}
+                              onChange={(e) => setMoveToCategory(e.target.value)}
+                              className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                            >
+                              {categories
+                                .filter(c => c.id !== categoryToDelete.id)
+                                .map(cat => (
+                                  <option key={cat.id} value={cat.id}>
+                                    {cat.icon} {cat.name}
+                                  </option>
+                                ))}
+                            </select>
+                          )}
+                        </div>
+                      </label>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-600">
+                    This category is empty. Are you sure you want to delete it?
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={cancelDelete}
+                disabled={isDeleting}
+                className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors duration-200 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeleteCategory}
+                disabled={isDeleting || (deleteAction === 'move' && !moveToCategory)}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isDeleting ? 'Deleting...' : `Delete Category ${deleteAction === 'delete' && itemCount > 0 ? `& ${itemCount} Item${itemCount !== 1 ? 's' : ''}` : ''}`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -95,7 +95,7 @@ const Menu: React.FC<MenuProps> = ({ menuItems, addToCart, cartItems, updateQuan
       />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div className="text-center mb-12">
-        <h2 className="text-5xl font-lilita text-[color:var(--raffa-dark)] mb-2">Menu</h2>
+        <h2 className="text-5xl font-lilita text-[color:var(--raffa-dark)] mb-2">COMMISSARY ONLINE STORE</h2>
         <p className="text-[color:var(--raffa-dark)]/80 max-w-2xl mx-auto">
           {siteSettings?.site_description || 'Discover our selection of authentic dim sum, flavorful noodles, and traditional Asian dishes, all prepared with fresh ingredients and authentic techniques.'}
         </p>
