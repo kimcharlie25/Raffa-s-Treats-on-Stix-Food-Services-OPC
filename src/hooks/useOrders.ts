@@ -241,6 +241,69 @@ export const useOrders = () => {
     return () => { cancelled = true; };
   }, [clientIp]);
 
+  const deleteOrder = useCallback(async (orderId: string) => {
+    try {
+      setError(null);
+
+      // Delete order items first (foreign key constraint)
+      const { error: itemsError } = await supabase
+        .from('order_items')
+        .delete()
+        .eq('order_id', orderId);
+
+      if (itemsError) throw itemsError;
+
+      // Delete the order
+      const { error: orderError } = await supabase
+        .from('orders')
+        .delete()
+        .eq('id', orderId);
+
+      if (orderError) throw orderError;
+
+      // Refresh orders list
+      await fetchOrders();
+    } catch (err) {
+      console.error('Error deleting order:', err);
+      const message = err instanceof Error ? err.message : 'Failed to delete order';
+      setError(message);
+      throw err;
+    }
+  }, [fetchOrders]);
+
+  const deleteAllOrders = useCallback(async () => {
+    try {
+      setError(null);
+      setLoading(true);
+
+      // Delete all order items first (foreign key constraint)
+      const { error: itemsError } = await supabase
+        .from('order_items')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
+
+      if (itemsError) throw itemsError;
+
+      // Delete all orders
+      const { error: ordersError } = await supabase
+        .from('orders')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
+
+      if (ordersError) throw ordersError;
+
+      // Refresh orders list (will be empty)
+      await fetchOrders();
+    } catch (err) {
+      console.error('Error deleting all orders:', err);
+      const message = err instanceof Error ? err.message : 'Failed to delete all orders';
+      setError(message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchOrders]);
+
   return { 
     createOrder, 
     creating, 
@@ -248,6 +311,8 @@ export const useOrders = () => {
     orders, 
     loading, 
     fetchOrders, 
-    updateOrderStatus 
+    updateOrderStatus,
+    deleteOrder,
+    deleteAllOrders
   };
 };

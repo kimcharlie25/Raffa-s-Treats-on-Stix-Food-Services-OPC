@@ -10,7 +10,7 @@ interface OrdersManagerProps {
 }
 
 const OrdersManager: React.FC<OrdersManagerProps> = ({ onBack }) => {
-  const { orders, loading, error, updateOrderStatus } = useOrders();
+  const { orders, loading, error, updateOrderStatus, deleteOrder, deleteAllOrders } = useOrders();
   const [selectedOrder, setSelectedOrder] = useState<OrderWithItems | null>(null);
   const [printOrder, setPrintOrder] = useState<OrderWithItems | null>(null);
   const [updating, setUpdating] = useState<string | null>(null);
@@ -32,6 +32,8 @@ const OrdersManager: React.FC<OrdersManagerProps> = ({ onBack }) => {
   const receiptPrintRef = useRef<HTMLDivElement | null>(null);
   const receiptCaptureRef = useRef<HTMLDivElement | null>(null);
   const [captureOrder, setCaptureOrder] = useState<OrderWithItems | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
@@ -214,6 +216,39 @@ const OrdersManager: React.FC<OrdersManagerProps> = ({ onBack }) => {
       alert('Failed to update order status');
     } finally {
       setUpdating(null);
+    }
+  };
+
+  const handleDeleteOrder = async (orderId: string) => {
+    if (!confirm('Are you sure you want to delete this order? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      setUpdating(orderId);
+      await deleteOrder(orderId);
+      if (selectedOrder?.id === orderId) {
+        setSelectedOrder(null);
+      }
+    } catch (err) {
+      alert('Failed to delete order');
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+  const handleDeleteAllOrders = async () => {
+    setShowDeleteConfirm(false);
+    
+    try {
+      setDeleting(true);
+      await deleteAllOrders();
+      setSelectedOrder(null);
+      alert('All orders have been deleted successfully');
+    } catch (err) {
+      alert('Failed to delete all orders. Some orders may have been deleted.');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -419,8 +454,19 @@ const OrdersManager: React.FC<OrdersManagerProps> = ({ onBack }) => {
               </button>
               <h1 className="text-2xl font-playfair font-semibold text-black">Orders Management</h1>
             </div>
-            <div className="text-sm text-gray-500">
-              {orders.length} order{orders.length !== 1 ? 's' : ''} total
+            <div className="flex items-center space-x-4">
+              <div className="text-sm text-gray-500">
+                {orders.length} order{orders.length !== 1 ? 's' : ''} total
+              </div>
+              {orders.length > 0 && (
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  disabled={deleting}
+                  className="px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {deleting ? 'Deleting...' : 'Delete All Orders'}
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -830,6 +876,49 @@ const OrdersManager: React.FC<OrdersManagerProps> = ({ onBack }) => {
       {/* Inline printable receipt content (hidden on screen) */}
       {printOrder && <ReceiptInline order={printOrder} innerRef={receiptPrintRef} variant="print" />}
       {captureOrder && <ReceiptInline order={captureOrder} innerRef={receiptCaptureRef} variant="capture" />}
+      
+      {/* Delete All Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-2xl">
+            <div className="flex items-center justify-center mb-4">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                <XCircle className="h-6 w-6 text-red-600" />
+              </div>
+            </div>
+            
+            <h3 className="text-xl font-semibold text-gray-900 text-center mb-2">
+              Delete All Orders?
+            </h3>
+            
+            <p className="text-gray-600 text-center mb-6">
+              This will permanently delete <strong>all {orders.length} orders</strong> and their associated data. 
+              This action cannot be undone.
+            </p>
+            
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-6">
+              <p className="text-sm text-red-800 text-center">
+                <strong>Warning:</strong> Order history, customer information, and order items will be permanently removed.
+              </p>
+            </div>
+            
+            <div className="flex space-x-3">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1 px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors duration-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteAllOrders}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200"
+              >
+                Yes, Delete All
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

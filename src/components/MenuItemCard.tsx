@@ -65,6 +65,15 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
 
   const handleIncrement = () => {
     if (!cartItemId) return;
+    
+    // Check if there's a stock limit
+    if (item.trackInventory && item.stockQuantity !== null) {
+      if (quantity >= item.stockQuantity) {
+        // Already at max stock, don't allow increment
+        return;
+      }
+    }
+    
     onUpdateQuantity(cartItemId, quantity + 1);
   };
 
@@ -201,12 +210,12 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
             
             {/* Action Buttons */}
             <div className="flex-shrink-0">
-              {!item.available ? (
+              {!item.available || (item.trackInventory && item.stockQuantity === 0) ? (
                 <button
                   disabled
                   className="bg-gray-200 text-gray-500 px-4 py-2.5 rounded-xl cursor-not-allowed font-medium text-sm"
                 >
-                  Unavailable
+                  {item.trackInventory && item.stockQuantity === 0 ? 'Out of Stock' : 'Unavailable'}
                 </button>
               ) : quantity === 0 ? (
                 <button
@@ -216,20 +225,30 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
                   {item.variations?.length || item.addOns?.length ? 'Customize' : 'Add to Cart'}
                 </button>
               ) : (
-                <div className="flex items-center space-x-2 bg-yellow-100 rounded-xl p-1 border border-yellow-300">
-                  <button
-                    onClick={handleDecrement}
-                    className="p-2 hover:bg-yellow-200 rounded-lg transition-colors duration-200 hover:scale-110"
-                  >
-                    <Minus className="h-4 w-4 text-gray-700" />
-                  </button>
-                  <span className="font-bold text-gray-900 min-w-[28px] text-center text-sm">{quantity}</span>
-                  <button
-                    onClick={handleIncrement}
-                    className="p-2 hover:bg-yellow-200 rounded-lg transition-colors duration-200 hover:scale-110"
-                  >
-                    <Plus className="h-4 w-4 text-gray-700" />
-                  </button>
+                <div className="flex flex-col items-center space-y-1">
+                  <div className="flex items-center space-x-2 bg-yellow-100 rounded-xl p-1 border border-yellow-300">
+                    <button
+                      onClick={handleDecrement}
+                      className="p-2 hover:bg-yellow-200 rounded-lg transition-colors duration-200 hover:scale-110"
+                    >
+                      <Minus className="h-4 w-4 text-gray-700" />
+                    </button>
+                    <span className="font-bold text-gray-900 min-w-[28px] text-center text-sm">{quantity}</span>
+                    <button
+                      onClick={handleIncrement}
+                      disabled={item.trackInventory && item.stockQuantity !== null && quantity >= item.stockQuantity}
+                      className={`p-2 rounded-lg transition-colors duration-200 ${
+                        item.trackInventory && item.stockQuantity !== null && quantity >= item.stockQuantity
+                          ? 'opacity-50 cursor-not-allowed'
+                          : 'hover:bg-yellow-200 hover:scale-110'
+                      }`}
+                    >
+                      <Plus className="h-4 w-4 text-gray-700" />
+                    </button>
+                  </div>
+                  {item.trackInventory && item.stockQuantity !== null && quantity >= item.stockQuantity && (
+                    <span className="text-xs text-orange-600 font-medium whitespace-nowrap">Max stock</span>
+                  )}
                 </div>
               )}
             </div>
@@ -418,10 +437,20 @@ const MenuItemCard: React.FC<MenuItemCardProps> = ({
 
               <button
                 onClick={handleCustomizedAddToCart}
-                className="w-full bg-[color:var(--raffa-red)] text-white py-4 rounded-xl hover:bg-red-700 transition-all duration-200 font-semibold flex items-center justify-center space-x-2 shadow-lg hover:shadow-xl transform hover:scale-105"
+                disabled={item.trackInventory && item.stockQuantity === 0}
+                className={`w-full py-4 rounded-xl transition-all duration-200 font-semibold flex items-center justify-center space-x-2 shadow-lg ${
+                  item.trackInventory && item.stockQuantity === 0
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-[color:var(--raffa-red)] text-white hover:bg-red-700 hover:shadow-xl transform hover:scale-105'
+                }`}
               >
                 <ShoppingCart className="h-5 w-5" />
-                <span>Add to Cart - ₱{calculatePrice().toFixed(2)}</span>
+                <span>
+                  {item.trackInventory && item.stockQuantity === 0 
+                    ? 'Out of Stock' 
+                    : `Add to Cart - ₱${calculatePrice().toFixed(2)}`
+                  }
+                </span>
               </button>
             </div>
           </div>

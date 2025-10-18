@@ -5,7 +5,6 @@ import Header from './components/Header';
 import Menu from './components/Menu';
 import Cart from './components/Cart';
 import Checkout from './components/Checkout';
-import FloatingCartButton from './components/FloatingCartButton';
 import AdminDashboard from './components/AdminDashboard';
 import AdminLogin from './components/AdminLogin';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -61,6 +60,7 @@ function MainApp() {
       {currentView === 'cart' && (
         <Cart 
           cartItems={cart.cartItems}
+          menuItems={menuItems}
           updateQuantity={cart.updateQuantity}
           removeFromCart={cart.removeFromCart}
           clearCart={cart.clearCart}
@@ -75,13 +75,6 @@ function MainApp() {
           cartItems={cart.cartItems}
           totalPrice={cart.getTotalPrice()}
           onBack={() => handleViewChange('cart')}
-        />
-      )}
-      
-      {currentView === 'menu' && (
-        <FloatingCartButton 
-          itemCount={cart.getTotalItems()}
-          onCartClick={() => handleViewChange('cart')}
         />
       )}
     </div>

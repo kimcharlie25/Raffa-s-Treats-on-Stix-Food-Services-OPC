@@ -1,9 +1,10 @@
 import React from 'react';
 import { Trash2, Plus, Minus, ArrowLeft } from 'lucide-react';
-import { CartItem } from '../types';
+import { CartItem, MenuItem } from '../types';
 
 interface CartProps {
   cartItems: CartItem[];
+  menuItems: MenuItem[];
   updateQuantity: (id: string, quantity: number) => void;
   removeFromCart: (id: string) => void;
   clearCart: () => void;
@@ -14,6 +15,7 @@ interface CartProps {
 
 const Cart: React.FC<CartProps> = ({
   cartItems,
+  menuItems,
   updateQuantity,
   removeFromCart,
   clearCart,
@@ -27,6 +29,29 @@ const Cart: React.FC<CartProps> = ({
       .split(/\s+/)
       .map(word => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
+  };
+
+  // Helper function to get menu item details including stock info
+  const getMenuItemStock = (cartItem: CartItem) => {
+    const menuItem = menuItems.find(item => item.id === cartItem.menuItemId);
+    if (!menuItem || !menuItem.trackInventory || menuItem.stockQuantity === null) {
+      return { hasStockLimit: false, stockQuantity: null, atMaxStock: false };
+    }
+    return {
+      hasStockLimit: true,
+      stockQuantity: menuItem.stockQuantity,
+      atMaxStock: cartItem.quantity >= menuItem.stockQuantity
+    };
+  };
+
+  // Handle increment with stock validation
+  const handleIncrement = (item: CartItem) => {
+    const stockInfo = getMenuItemStock(item);
+    if (stockInfo.hasStockLimit && stockInfo.atMaxStock) {
+      // Don't allow increment if at max stock
+      return;
+    }
+    updateQuantity(item.id, item.quantity + 1);
   };
 
   if (cartItems.length === 0) {
@@ -90,20 +115,36 @@ const Cart: React.FC<CartProps> = ({
               </div>
               
               <div className="flex items-center space-x-4 ml-4">
-                <div className="flex items-center space-x-3 bg-yellow-100 rounded-full p-1 border border-yellow-300">
-                  <button
-                    onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                    className="p-2 hover:bg-yellow-200 rounded-full transition-colors duration-200"
-                  >
-                    <Minus className="h-4 w-4" />
-                  </button>
-                  <span className="font-semibold text-black min-w-[32px] text-center">{item.quantity}</span>
-                  <button
-                    onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                    className="p-2 hover:bg-yellow-200 rounded-full transition-colors duration-200"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </button>
+                <div className="flex flex-col items-center space-y-1">
+                  <div className="flex items-center space-x-3 bg-yellow-100 rounded-full p-1 border border-yellow-300">
+                    <button
+                      onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                      className="p-2 hover:bg-yellow-200 rounded-full transition-colors duration-200"
+                    >
+                      <Minus className="h-4 w-4" />
+                    </button>
+                    <span className="font-semibold text-black min-w-[32px] text-center">{item.quantity}</span>
+                    <button
+                      onClick={() => handleIncrement(item)}
+                      disabled={getMenuItemStock(item).atMaxStock}
+                      className={`p-2 rounded-full transition-colors duration-200 ${
+                        getMenuItemStock(item).atMaxStock
+                          ? 'opacity-50 cursor-not-allowed'
+                          : 'hover:bg-yellow-200'
+                      }`}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </button>
+                  </div>
+                  {getMenuItemStock(item).hasStockLimit && (
+                    <div className="text-xs text-gray-600">
+                      {getMenuItemStock(item).atMaxStock ? (
+                        <span className="text-orange-600 font-medium">Max stock</span>
+                      ) : (
+                        <span className="text-gray-500">{getMenuItemStock(item).stockQuantity} available</span>
+                      )}
+                    </div>
+                  )}
                 </div>
                 
                 <div className="text-right">
