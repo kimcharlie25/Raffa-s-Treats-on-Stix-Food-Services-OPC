@@ -46,6 +46,13 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack }) =>
     }
   };
 
+  // Clear recipient name when switching from delivery to pickup
+  React.useEffect(() => {
+    if (serviceType === 'pickup') {
+      setRecipientName('');
+    }
+  }, [serviceType]);
+
   // Helper to check if a date is Wednesday, Thursday, Friday, or Saturday
   const isAllowedDay = (dateString: string): boolean => {
     if (!dateString) return false;
@@ -160,7 +167,9 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack }) =>
         ? `${scheduledDate} ${scheduledTime}` 
         : undefined;
       const mergedNotes = landmark ? `${notes ? notes + ' | ' : ''}Landmark: ${landmark}` : notes;
-      const customerInfo = `Branch: ${branchName} | Owner: ${ownerRepresentative} | Recipient: ${recipientName}`;
+      const customerInfo = serviceType === 'delivery'
+        ? `Branch: ${branchName} | Owner: ${ownerRepresentative} | Recipient: ${recipientName}`
+        : `Branch: ${branchName} | Owner: ${ownerRepresentative}`;
       
       await createOrder({
         customerName: customerInfo,
@@ -207,8 +216,8 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack }) =>
 
 🏢 Branch: ${branchName}
 👤 Owner/Representative: ${ownerRepresentative}
-📦 Recipient: ${recipientName}
-📞 Recipient Contact: ${recipientContact}
+${serviceType === 'delivery' ? `📦 Recipient: ${recipientName}` : ''}
+📞 ${serviceType === 'delivery' ? 'Recipient Contact' : 'Contact Number'}: ${recipientContact}
 📍 Service: ${serviceType.charAt(0).toUpperCase() + serviceType.slice(1)}
 ${serviceType === 'delivery' ? `🏠 Address: ${address}${landmark ? `\n🗺️ Landmark: ${landmark}` : ''}` : ''}
 ${scheduleInfo}
@@ -260,10 +269,10 @@ Please confirm this order to proceed. Thank you for choosing Raffa's! 🥟
     
   };
 
-  const isDetailsValid = branchName && ownerRepresentative && recipientName && recipientContact && 
+  const isDetailsValid = branchName && ownerRepresentative && recipientContact && 
     scheduledDate && scheduledTime &&
     isAllowedDay(scheduledDate) &&
-    (serviceType !== 'delivery' || address);
+    (serviceType !== 'delivery' || (recipientName && address));
 
   if (step === 'details') {
     return (
@@ -342,20 +351,25 @@ Please confirm this order to proceed. Thank you for choosing Raffa's! 🥟
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-black mb-2">Recipient of Delivery *</label>
-                <input
-                  type="text"
-                  value={recipientName}
-                  onChange={(e) => setRecipientName(e.target.value)}
-                  className="w-full px-4 py-3 border border-yellow-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-200"
-                  placeholder="Enter recipient name"
-                  required
-                />
-              </div>
+              {/* Recipient of Delivery - only show for delivery service type */}
+              {serviceType === 'delivery' && (
+                <div>
+                  <label className="block text-sm font-medium text-black mb-2">Recipient of Delivery *</label>
+                  <input
+                    type="text"
+                    value={recipientName}
+                    onChange={(e) => setRecipientName(e.target.value)}
+                    className="w-full px-4 py-3 border border-yellow-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-200"
+                    placeholder="Enter recipient name"
+                    required
+                  />
+                </div>
+              )}
 
               <div>
-                <label className="block text-sm font-medium text-black mb-2">Contact Number of Recipient *</label>
+                <label className="block text-sm font-medium text-black mb-2">
+                  {serviceType === 'delivery' ? 'Contact Number of Recipient *' : 'Contact Number *'}
+                </label>
                 <input
                   type="tel"
                   value={recipientContact}
@@ -642,8 +656,12 @@ Please confirm this order to proceed. Thank you for choosing Raffa's! 🥟
               <h4 className="font-medium text-black mb-2">Customer Details</h4>
               <p className="text-sm text-gray-600">Branch: {branchName}</p>
               <p className="text-sm text-gray-600">Owner/Representative: {ownerRepresentative}</p>
-              <p className="text-sm text-gray-600">Recipient: {recipientName}</p>
-              <p className="text-sm text-gray-600">Contact: {recipientContact}</p>
+              {serviceType === 'delivery' && (
+                <p className="text-sm text-gray-600">Recipient: {recipientName}</p>
+              )}
+              <p className="text-sm text-gray-600">
+                {serviceType === 'delivery' ? 'Recipient Contact' : 'Contact Number'}: {recipientContact}
+              </p>
               <p className="text-sm text-gray-600">Service: {serviceType.charAt(0).toUpperCase() + serviceType.slice(1)}</p>
               {serviceType === 'delivery' && (
                 <>
