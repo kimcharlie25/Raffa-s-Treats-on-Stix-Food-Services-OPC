@@ -1210,7 +1210,7 @@ const AdminDashboard: React.FC = () => {
                 <Coffee className="h-7 w-7 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-playfair font-bold text-white">Raffa's OPC Admin</h1>
+                <h1 className="text-2xl font-playfair font-bold text-white">Raffa's OCP Admin</h1>
                 <p className="text-xs text-red-100">Management Dashboard</p>
               </div>
             </div>
