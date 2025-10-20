@@ -80,7 +80,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, totalPrice, onBack }) =>
   // Generate time slots based on service type
   const getTimeSlots = (): string[] => {
     const slots: string[] = [];
-    const startHour = serviceType === 'delivery' ? 12 : 8; // 12 PM for delivery, 8 AM for pickup
+    const startHour = 12; // 12 PM onwards for both delivery and pickup
     
     for (let hour = startHour; hour < 21; hour++) { // Until 9 PM
       const hourStr = hour.toString().padStart(2, '0');
@@ -251,7 +251,7 @@ ${notes ? `📝 Notes: ${notes}` : ''}
 Please confirm this order to proceed. Thank you for choosing Raffa's! 🥟
     `.trim();
 
-    const pageId = '61574906107219';
+    const pageId = '61574780323417';
     // Deep link retained for future use if needed
     // const appDeepLink = `fb-messenger://user-thread/${pageId}`;
     const encodedMessage = encodeURIComponent(orderDetails);
@@ -407,7 +407,9 @@ Please confirm this order to proceed. Thank you for choosing Raffa's! 🥟
 
               {/* Scheduled Date and Time */}
               <div>
-                <label className="block text-sm font-medium text-black mb-2">Scheduled Date *</label>
+                <label className="block text-sm font-medium text-black mb-2">
+                  {serviceType === 'delivery' ? 'Delivery Date *' : 'Pick Up Date *'}
+                </label>
                 <input
                   type="date"
                   value={scheduledDate}
@@ -427,7 +429,9 @@ Please confirm this order to proceed. Thank you for choosing Raffa's! 🥟
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-black mb-2">Scheduled Time *</label>
+                <label className="block text-sm font-medium text-black mb-2">
+                  {serviceType === 'delivery' ? 'Time of Dispatch *' : 'Pick Up Time *'}
+                </label>
                 <select
                   value={scheduledTime}
                   onChange={(e) => setScheduledTime(e.target.value)}
@@ -446,9 +450,7 @@ Please confirm this order to proceed. Thank you for choosing Raffa's! 🥟
                   ))}
                 </select>
                 <p className="text-xs text-gray-500 mt-1">
-                  {serviceType === 'delivery' 
-                    ? 'Delivery available from 12:00 PM onwards' 
-                    : 'Pick up available from 8:00 AM onwards'}
+                  Available from 12:00 PM onwards
                 </p>
               </div>
 
