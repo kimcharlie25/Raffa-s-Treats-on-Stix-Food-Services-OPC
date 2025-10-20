@@ -82,8 +82,8 @@ const OrdersManager: React.FC<OrdersManagerProps> = ({ onBack }) => {
         style={variant === 'capture' ? { position: 'absolute', left: 0, top: 0, zIndex: -1 } : undefined}
       >
         <div className="text-center">
-          <div className="font-bold text-base">Raffa's Treats on Stix</div>
-          <div>Orders Receipt</div>
+          <div className="font-bold text-base">Raffa's Treats on Stix Food Services OPC</div>
+          <div>Order Slip</div>
           <div>{new Date(order.created_at).toLocaleString()}</div>
         </div>
         <div className="divider" />

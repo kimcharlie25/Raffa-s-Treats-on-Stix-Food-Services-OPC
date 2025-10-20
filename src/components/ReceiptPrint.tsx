@@ -43,8 +43,8 @@ const ReceiptPrint: React.FC = () => {
   return (
     <div className="receipt mx-auto">
       <div className="text-center">
-        <div className="font-bold text-base">Raffa's Treats on Stix</div>
-        <div>Orders Receipt</div>
+        <div className="font-bold text-base">Raffa's Treats on Stix Food Services OPC</div>
+        <div>Order Slip</div>
         <div>{created.toLocaleString()}</div>
       </div>
 
