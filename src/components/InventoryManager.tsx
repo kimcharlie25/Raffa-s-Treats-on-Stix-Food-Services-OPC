@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { ArrowLeft, AlertTriangle, Minus, Plus, RefreshCw } from 'lucide-react';
+import { ArrowLeft, AlertTriangle, Minus, Plus, RefreshCw, ArrowUp, ArrowDown } from 'lucide-react';
 import { MenuItem } from '../types';
 
 type InventoryManagerProps = {
@@ -9,18 +9,47 @@ type InventoryManagerProps = {
   loading: boolean;
 };
 
+type SortOrder = 'asc' | 'desc' | 'none';
+
 const InventoryManager: React.FC<InventoryManagerProps> = ({ items, onBack, onUpdateItem, loading }) => {
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [query, setQuery] = useState('');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('none');
 
-  const filteredItems = useMemo(() => {
+  const filteredAndSortedItems = useMemo(() => {
+    // First, filter by search query
     const term = query.trim().toLowerCase();
-    if (!term) return items;
-    return items.filter((item) =>
-      item.name.toLowerCase().includes(term) ||
-      item.category.toLowerCase().includes(term)
-    );
-  }, [items, query]);
+    let filtered = term 
+      ? items.filter((item) =>
+          item.name.toLowerCase().includes(term) ||
+          item.category.toLowerCase().includes(term)
+        )
+      : [...items];
+
+    // Then, sort alphabetically if sorting is enabled
+    if (sortOrder !== 'none') {
+      filtered.sort((a, b) => {
+        const nameA = a.name.toLowerCase();
+        const nameB = b.name.toLowerCase();
+        
+        if (sortOrder === 'asc') {
+          return nameA.localeCompare(nameB);
+        } else {
+          return nameB.localeCompare(nameA);
+        }
+      });
+    }
+
+    return filtered;
+  }, [items, query, sortOrder]);
+
+  const toggleSort = () => {
+    setSortOrder((current) => {
+      if (current === 'none') return 'asc';
+      if (current === 'asc') return 'desc';
+      return 'none';
+    });
+  };
 
   const adjustStock = async (item: MenuItem, delta: number) => {
     if (!item.trackInventory) return;
@@ -111,7 +140,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ items, onBack, onUp
               <h1 className="text-2xl font-playfair font-semibold text-black">Inventory Management</h1>
             </div>
             <div className="text-sm text-gray-500">
-              {filteredItems.length} item{filteredItems.length !== 1 ? 's' : ''}
+              {filteredAndSortedItems.length} item{filteredAndSortedItems.length !== 1 ? 's' : ''}
             </div>
           </div>
         </div>
@@ -139,7 +168,28 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ items, onBack, onUp
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
+                  <th 
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors select-none"
+                    onClick={toggleSort}
+                  >
+                    <div className="flex items-center space-x-2">
+                      <span>Product Name</span>
+                      <div className="flex flex-col">
+                        {sortOrder === 'none' && (
+                          <div className="text-gray-400">
+                            <ArrowUp className="h-3 w-3 -mb-1" />
+                            <ArrowDown className="h-3 w-3" />
+                          </div>
+                        )}
+                        {sortOrder === 'asc' && (
+                          <ArrowUp className="h-4 w-4 text-green-600" />
+                        )}
+                        {sortOrder === 'desc' && (
+                          <ArrowDown className="h-4 w-4 text-green-600" />
+                        )}
+                      </div>
+                    </div>
+                  </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tracking</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Threshold</th>
@@ -147,7 +197,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ items, onBack, onUp
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredItems.map((item) => {
+                {filteredAndSortedItems.map((item) => {
                   const tracking = item.trackInventory ?? false;
                   const stock = tracking ? item.stockQuantity ?? 0 : null;
                   const threshold = tracking ? item.lowStockThreshold ?? 0 : null;
@@ -257,7 +307,7 @@ const InventoryManager: React.FC<InventoryManagerProps> = ({ items, onBack, onUp
                     </tr>
                   );
                 })}
-                {!filteredItems.length && !loading && (
+                {!filteredAndSortedItems.length && !loading && (
                   <tr>
                     <td colSpan={5} className="px-6 py-10 text-center text-gray-500">
                       No menu items found. Try adjusting your search.
