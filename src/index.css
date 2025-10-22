@@ -54,15 +54,21 @@ img {
   display: none;
 }
 
-/* Print styles for 80mm thermal receipt */
+/* Print styles for bond paper (centered receipt) */
 @media print {
   @page {
-    size: 80mm auto;
+    size: letter; /* Standard 8.5" x 11" bond paper */
     margin: 0;
   }
 
   body {
     background: #ffffff !important;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
   }
 
   /* Hide everything except the receipt during print */
@@ -74,8 +80,9 @@ img {
   }
   .receipt {
     position: absolute;
-    left: 0;
-    top: 0;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
   }
 
   .no-print {
